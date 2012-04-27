@@ -58,7 +58,7 @@ decrypt them locally with their private key.
 
 ##High-level structure##
 
- ![Structure of a Thormor Vault](vault.png)
+ ![Structure of a Thormor Vault](images/vault.png)
 
 0. Encrypted data is stored online, publicly downloadable by anyone who
    has a link to it.
@@ -99,9 +99,11 @@ decrypt them locally with their private key.
 
 - Data is typically signed with the sender's key, and clients *must*
   validate the signature.
+
 - When data is also encrypted, the PGP anonymous mode is used (keyid
   in the header set to 0.) This prevents casually determining who can
   decrypt a given file.
+
 - Unless stated, both ascii-armored and binary formatted PGP files
   can be used.
 
@@ -152,7 +154,6 @@ This is a standard PGP public key.
 
 **Note:** Keys should be independently verified using the standard
 mechanisms that PGP provides, ie: directly verifying key fingerprints.
-
 A thormor vault itself provides no guarantees that the public key
 actually belongs to any given individual.
 

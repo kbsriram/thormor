@@ -1,0 +1,345 @@
+<!doctype html>
+<html lang="en">
+<head>
+<title>Thormor Vault Specification</title>
+<meta charset="utf-8"/>
+<link rel="stylesheet" href="css/style.css"/>
+</head>
+<body>
+<h1>Thormor Vault</h1>
+
+<p>A <strong>Thormor vault</strong> is a way to organize data in the cloud to form a
+distributed, secured message exchange system.</p>
+
+<h2>Why</h2>
+
+<p>Current ways to share content lets the service provider peek into the
+content being shared (facebook, g+, gmail, dropbox, path etc.) The
+content is often analyzed and monetized (say, by selling targeted
+ads.) Ultimately, access to the data is controlled by the policies of
+the provider. This leads to privacy concerns when sharing sensitive
+material through these services -- anything from pictures of kids to
+financial or medical files.</p>
+
+<p>However, by first encrypting content with the recipient's public key,
+it is possible to exchange sensitive content while preventing the
+service provider from being able to examine the data.</p>
+
+<p>Formalizing this approach lets users fully control who can look at
+their shared data, without needing to trust a cloud provider.</p>
+
+<h2>Summary</h2>
+
+<p>Data is stored online, PGP encrypted with the recipient's public
+key. Recipients poll the sender's storage to fetch messages, and
+decrypt them locally with their private key.</p>
+
+<h2>Assumptions and goals</h2>
+
+<ol>
+<li><p>Any service in the cloud -- network or storage -- may inspect,
+modify or reveal content to anyone.</p></li>
+<li><p>Protect all content transmitted or stored online, so only the
+intended recipients can decipher the data.</p></li>
+<li><p>Open specification, anyone should be able to host or access a
+vault.</p></li>
+<li><p>Implementation should be simple enough to work with generally
+available cloud storage services like dropbox, google drive and so
+on.</p></li>
+</ol>
+
+<h2>Not goals</h2>
+
+<ol>
+<li><p>Discovering vaults. How do you find the thormor vault for a
+particular person?</p></li>
+<li><p>Traffic analysis and anonymity. It may be possible for storage
+providers to use data access patterns to identify connections
+between individuals even if the content being exchanged is
+encrypted.</p></li>
+<li><p>Securing content locally. Once a message is decrypted on a user's
+device, the contents are visible to other applications running
+locally.</p></li>
+</ol>
+
+<h2>High-level structure</h2>
+
+<p><img src="images/vault.png" alt="Structure of a Thormor Vault" title="" /></p>
+
+<ol>
+<li><p>Encrypted data is stored online, publicly downloadable by anyone who
+has a link to it.</p></li>
+<li><p>A vault is identified by a URL that points to a signed JSON file in
+the cloud. This is the <strong>root</strong> file, which points to other files
+of interest.</p></li>
+<li><p>The root file contains a URL to the user's PGP public key and a
+URL to an <strong>outbox list</strong> file.</p></li>
+<li><p>The outbox list is a signed JSON file with a list of URLs, each
+pointing to an <strong>outbox</strong> file. There is one outbox file for each
+recipient who can access the vault.</p></li>
+<li><p>Each outbox file is an encrypted JSON file with entries, one for
+each message. A message may internally refer to other encrypted
+files, depending on the type of message. For instance, a message
+sharing a picture contains metadata about the picture as well as a
+URL to the image itself.</p>
+
+<p>The outbox file and any referenced files are encrypted with the
+recipient's public key, so only the recipient can decipher the
+data.</p></li>
+<li><p>To send a message to a list of recipients, the sender first adds an
+outbox entry, one for each recipient. The sender then updates the
+outbox file for each recipient (after encrypting the outbox file
+with the recipient's public key and signing it.)</p></li>
+<li><p>To fetch messages, the receiver polls the sender's outbox URL for
+that recipient, and decrypts it locally to recover the message
+entries.</p></li>
+</ol>
+
+<h2>Details</h2>
+
+<h3>General guidelines</h3>
+
+<ul>
+<li><p>Data is typically signed with the sender's key, and clients <em>must</em>
+validate the signature.</p></li>
+<li><p>When data is also encrypted, the PGP anonymous mode is used (keyid
+in the header set to 0.) This prevents casually determining who can
+decrypt a given file.</p></li>
+<li><p>Unless stated, both ascii-armored and binary formatted PGP files
+can be used.</p></li>
+</ul>
+
+<h3>The root file</h3>
+
+<p>A thormor vault is identified by a unique URL, say
+  <tt>https://dl.dropbox.com/u/1234/thormor/root.asc</tt></p>
+
+<p>This URL must return a signed JSON file. For example, an ascii-armored
+file may look like:</p>
+
+<pre><code>-----BEGIN PGP MESSAGE-----
+Version: GnuPG v1.4.11 (Darwin)
+
+owGbwMvMwMRsvMCfg/GWwyXGNe+S2Ir0sorz8/xn7j5TzaUABEplqUXFmfl5SlYK
+hjoQkeLUnDQgVymjpKSg2EpfPyVHL6UovyApv0IvOT9Xv1Tf0MjYRL8kI78oN79I
+vyg/v0QvsThZCaK5oDQpJzM5Pju1kkQjCrKLlKAOyC8tAaqMz8ksLiHeECRNEOfU
+cnUyyrAwMDMxsLEygTzMwMUpAA8LE/b/xSJ33wgc7zDpLv/kcW+/9MZtKbX/9OL4
+5x4U+u2iNn3lE5O5jJ/S5G695d/zPX4Sc3lHRQJjxQR5jntqororFojrbxAxsznc
+1q/420p23mTBlr/n5A9lF+Q8tG5cfuBcw2Xj04vPV7cdvHlIaKbLm3s/D89q+b9b
+yyb/S7bWjJLofxkC/vYvLOuY+XLrLPiFlm38tFl6mrlLe9WC0yL6x5eHHZmf2DxB
+59FWxUO7fnySzz5v92P/DOnt81ZzyAq4nzJbeHNt5NO1PNs+HlzVxPznwasnfKxH
+AtwCd0cILNtXvvPp338WTMmejuL3/Vm/zM2We/b47YtPHW4TdiecNCtzkXm9zft/
+zu3pYo+MTwMA
+=VCPz
+-----END PGP MESSAGE-----
+</code></pre>
+
+<p>The contents must be a JSON file, in the above example it is:</p>
+
+<pre><code>{
+    "version": 1,
+    "self": "https://dl.dropbox.com/u/1234/thormor/root.asc"
+    "public_key": "https://dl.dropbox.com/u/1234/thormor/root.pkr",
+    "outbox_list": "https://dl.dropbox.com/u/1234/thormor/outbox_list.asc"
+}
+</code></pre>
+
+<h4>Required fields</h4>
+
+<ul>
+<li>version: 1</li>
+<li>self: URL to the root file.</li>
+<li>public_key: URL to the public key for the user who owns the vault.</li>
+<li>outbox_list: URL to a signed JSON file containing a list of outbox urls.</li>
+</ul>
+
+<h3>The public_key file</h3>
+
+<p>This is a standard PGP public key.</p>
+
+<p><strong>Note:</strong> Keys should be independently verified using the standard
+mechanisms that PGP provides, ie: directly verifying key fingerprints.
+A thormor vault itself provides no guarantees that the public key
+actually belongs to any given individual.</p>
+
+<h3>The outbox_list file</h3>
+
+<p>The outbox_list URL must return a signed JSON file. The contents must
+be a JSON file with a list of outbox entries, for example:</p>
+
+<pre><code>{
+  "version": 1,
+  "outbox_list": [
+     { "outbox": "-----BEGIN PGP MESSAGE-----\\n...END PGP MESSAGE-----" },
+     { "outbox": "-----BEGIN PGP MESSAGE-----\\n...END PGP MESSAGE-----" },
+     ...
+  ]
+}
+</code></pre>
+
+<p>Outbox URLs are not directly represented in the outbox list. Instead,
+each outbox URL is encrypted with that recipient's public key, and the
+ascii-armored version is used as the outbox value.</p>
+
+<p>This is mainly to prevent casually obtaining a list of recipient ids
+who can access the vault, but serves no other cryptographic purpose.</p>
+
+<p>Recipients download the outbox list from a sender's thormor vault and
+try to decrypt each entry with the recipient's key. If an entry is
+successfully decrypted, it uses the decrypted content as a URL
+pointing to the outbox file for that recipient.</p>
+
+<h4>Required fields</h4>
+
+<ul>
+<li>version: 1</li>
+<li><p>outbox_list: An array of json objects, one for each recipient who
+can fetch content from this thormor vault.</p>
+
+<p>Each object has one field.</p>
+
+<ul>
+<li>outbox:
+ An ascii-armored string with encrypted content. The content
+ is simply the URL to the outbox file for the recipient. The
+ URL string is first encrypted with the recipient's public
+ key, then ascii-armored to create the entry. It is not
+ necessary to sign it (as the entire file is already signed.)</li>
+</ul></li>
+</ul>
+
+<p><strong>Note:</strong> implementations should maintain the same outbox URL for a
+recipient as new messages are added, and update the contents of the
+outbox file rather than changing the location of the outbox file.</p>
+
+<h3>The outbox file</h3>
+
+<p>The outbox URL for a recipient points to an signed, encrypted JSON
+file. The format is intended to be extended by applications, and any
+unknown fields must be skipped. An example file might be:</p>
+
+<pre><code>{
+  "version": 1,
+  "name": "KB Sriram",
+  "profile_image": "https://box.net/santoehu/content/2983.pgp",
+  "entries": [
+     {
+        "id": "fdfbdd42877c6e2bab0a73531caeed173172ceec",
+        "type": "thormor/file",
+        "mime-type": "application/pdf",
+        "src": "https://box.net/santoehu/content/82837.pgp",
+        "note": "Mortgage details",
+        "created": 13848992828,
+        "tags": ["finance"]
+     },
+     {
+        "id": "e2e3b086c3f3c674e161bb02841a44a8b346dd7c",
+        "type": "thormor/image",
+        "src": "https://box.net/santoehu/content/a9oeu7.pgp",
+        "note": "Kids at the ballpark!",
+        "geo": {
+           "latitude": 45.498677,
+           "longitude": -73.570260
+        },
+        "created": 13848992828
+     }
+   ]
+}
+</code></pre>
+
+<h4>Required fields</h4>
+
+<ul>
+<li>version: 1</li>
+<li>entries:
+an array of json objects, one for each message. Each message
+object must have these fields:
+<ul>
+<li>type: the type of message. Some pre-defined types are
+     available, and implementations may define additional
+     ones. Pre-defined types are described later.</li>
+<li>id: A unique string for this entry. Other entries may refer
+   to this id.</li>
+<li>created: milliseconds from the unix epoch, indicating when the
+   message was created. Entries <em>should</em> be listed in reverse
+   chronological order.</li>
+<li>tags: (optional) An array of strings, each string is a
+   free-form tag for that message.</li>
+</ul></li>
+</ul>
+
+<h4>Optional fields</h4>
+
+<ul>
+<li>next: URL to another outbox file, with the next set of messages for
+    the recipient.</li>
+<li>profile_image: URL to an encrypted image for the vault owner.</li>
+<li>name: The name of the vault owner.</li>
+</ul>
+
+<h2>Pre-defined types for the outbox</h2>
+
+<p><strong>Note:</strong> All types must have the standard required fields (type, id and
+created.) The rest of this only describes additional requirements on
+the fields.</p>
+
+<h3>type: thormor/file</h3>
+
+<p>This is a generic way to share digital content.</p>
+
+<h4>Required fields</h4>
+
+<ul>
+<li>src: URL to encrypted file</li>
+</ul>
+
+<h4>Optional fields</h4>
+
+<ul>
+<li>mime-type: mime type for the associated content</li>
+<li>note: A textual note attached to this message.</li>
+<li>size: size of file in bytes</li>
+<li>thumbnail: URL to an encrypted "small" image to represent the contents.</li>
+</ul>
+
+<h3>type: thormor/image</h3>
+
+<p>Share a single image (eg: a picture from a mobile phone.)</p>
+
+<h4>Required fields</h4>
+
+<ul>
+<li>src: URL to encrypted image.</li>
+</ul>
+
+<h4>Optional fields</h4>
+
+<ul>
+<li>thumbnail: URL to an encrypted "small" image to represent the contents.</li>
+<li>note: A textual string to go along with the image.</li>
+<li>geo: A geo-location for the image, with fields latitude and longitude.</li>
+</ul>
+
+<h3>type: thormor/comment</h3>
+
+<p>Add a comment to a previous message (can also be a comment, leading to
+threaded comments.)</p>
+
+<h4>Required fields</h4>
+
+<ul>
+<li>parent: id for the message being commented.</li>
+<li>note: A textual string containing the comment.</li>
+</ul>
+
+<h3>type: thormor/like</h3>
+
+<p>'like' a particular message.</p>
+
+<h4>Required fields</h4>
+
+<ul>
+<li>parent: id for the message being liked.</li>
+</ul>
+</body>
+</html>
