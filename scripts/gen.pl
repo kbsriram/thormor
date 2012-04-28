@@ -19,7 +19,8 @@ print OUT <<EOF;
 <body>
 EOF
 
-open (MARK, "markdown $file|") || die "Cannot run markdown : $!\n";
+open (MARK, "/usr/local/bin/markdown $file|")
+    || die "Cannot run markdown : $!\n";
 while (<MARK>) {
     print OUT;
 }

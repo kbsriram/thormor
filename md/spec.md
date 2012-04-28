@@ -22,8 +22,7 @@ their shared data, without needing to trust a cloud provider.
 
 ##Summary##
 
-
-Data is stored online, PGP encrypted with the recipient's public
+Users store messages online, PGP encrypted with the recipient's public
 key. Recipients poll the sender's storage to fetch messages, and
 decrypt them locally with their private key.
 
