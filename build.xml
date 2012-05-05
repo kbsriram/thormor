@@ -1,0 +1,75 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project name="thormor" default="core-compile" basedir=".">
+
+  <property name="java.source" value="1.5"/>
+  <property name="java.target" value="1.5"/>
+  <property name="lib.dir" value="${basedir}/lib"/>
+
+  <property name="classes.dir" value="classes"/>
+  <property name="src.dir" value="src"/>
+  <property name="reports.dir" value="${src.dir}/test/reports"/>
+
+  <path id="bc.lib">
+    <pathelement path="${lib.dir}/bcprov-jdk15on-147.jar"/>
+    <pathelement path="${lib.dir}/bcpg-jdk15on-147.jar"/>
+  </path>
+
+  <target name="init">
+    <mkdir dir="${classes.dir}/core"/>
+    <mkdir dir="${classes.dir}/test"/>
+    <mkdir dir="${reports.dir}"/>
+  </target>
+
+  <target name="core-compile" depends="init">
+    <javac source="${java.source}"
+           target="${java.target}"
+           debug="true"
+           srcdir="${src.dir}/core"
+           includeantruntime="false"
+           destdir="${classes.dir}/core">
+      <compilerarg value="-Xlint:all"/>
+      <classpath>
+        <path refid="bc.lib"/>
+      </classpath>
+    </javac>
+  </target>
+
+  <target name="test-compile" depends="core-compile">
+    <javac source="${java.source}"
+           target="${java.target}"
+           debug="true"
+           srcdir="${src.dir}/test"
+           includeantruntime="false"
+           destdir="${classes.dir}/test">
+      <compilerarg value="-Xlint:all"/>
+      <classpath>
+        <pathelement location="${classes.dir}/core"/>
+        <pathelement location="${lib.dir}/junit-4.10.jar"/>
+      </classpath>
+    </javac>
+  </target>
+
+  <target name="test" depends="test-compile">
+    <junit printsummary="yes" haltonfailure="yes">
+      <classpath>
+        <pathelement location="${classes.dir}/core"/>
+        <path refid="bc.lib"/>
+        <pathelement location="${classes.dir}/test"/>
+        <pathelement location="${lib.dir}/junit-4.10.jar"/>
+      </classpath>
+      <formatter type="plain"/>
+      <batchtest todir="${reports.dir}">
+        <fileset dir="${src.dir}/test">
+          <include name="**/*Test.java"/>
+        </fileset>
+      </batchtest>
+    </junit>
+      
+  </target>
+
+  <target name="clean">
+    <delete dir="${classes.dir}"/>
+    <delete dir="${reports.dir}"/>
+  </target>
+
+</project>
