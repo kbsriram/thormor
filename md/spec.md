@@ -182,6 +182,13 @@ try to decrypt each entry with the recipient's key. If an entry is
 successfully decrypted, it uses the decrypted content as a URL
 pointing to the outbox file for that recipient.
 
+**Note:** there may be multiple entries for the same recipient in the
+outbox file. This is not an error -- the recipient is expected to look
+for messages in all outboxes it can find. The reason for this is to
+simplify storing messages from multiple devices to a single
+vault. Each device may choose to add an outbox file unique to messages
+originating from that device, which makes it a little easier to avoid
+clobbering messages from other devices.
 
 ####Required fields####
 - version: 1
