@@ -35,6 +35,8 @@ import java.util.Date;
 import java.util.List;
 import java.util.ArrayList;
 import java.net.URL;
+import java.util.UUID;
+
 import java.security.DigestOutputStream;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
@@ -118,7 +120,7 @@ public class CVault
         CUtils.put(outbox_list_json, "outbox_list", new JSONArray());
 
         URL outbox_list_url = signAndUpload
-            (tmpsettings, outbox_list_json, "outbox_list.json", monitor);
+            (tmpsettings, outbox_list_json, "outbox_list.json", null, monitor);
 
         // 4. Create and upload root json
         JSONObject root_json = new JSONObject();
@@ -128,10 +130,11 @@ public class CVault
 
         URL root_url =
             signAndUpload
-            (tmpsettings, root_json, "root.json", monitor);
+            (tmpsettings, root_json, "root.json", null, monitor);
 
         // 5. All done. Initialize settings and save it.
         CUtils.put(root_json, "self", root_url.toString());
+        CUtils.put(root_json, "guid", UUID.randomUUID().toString());
         m_settings =
             CSettings.createEmpty(this, root_json, pkr, skr, passphrase);
         m_settings.saveKeys();
@@ -177,24 +180,27 @@ public class CVault
              monitor);
 
         // 2. Decode into memory
-        JSONObject rootjs = asJSON(vaultid.toString(), tmp_rootf, null);
+        JSONObject rootjs = verifyJSON(vaultid.toString(), tmp_rootf, null);
         if (rootjs.optString("public_key") == null) {
             throw new IOException("Missing public key in "+vaultid);
         }
+        if (rootjs.optString("outbox_list") == null) {
+            throw new IOException("Missing outbox_list in "+vaultid);
+        }
+        URL pubkey_url = new URL(rootjs.optString("public_key"));
+        URL outbox_list_url = new URL(rootjs.optString("outbox_list"));
 
         // 2. Download public key
         File tmp_pubkey = File.createTempFile("thormor", "pgp");
         PGPPublicKeyRing pkr;
         try {
             m_rprovider.download
-                (new CDownloadInfo
-                 (new URL(rootjs.optString("public_key")),
-                  tmp_pubkey, true, -1, null),
+                (new CDownloadInfo(pubkey_url, tmp_pubkey, true, -1, null),
                  monitor);
             pkr = CPGPUtils.readPublicKeyRing(tmp_pubkey);
 
             // 3. Recheck root json
-            rootjs = asJSON
+            rootjs = verifyJSON
                 (vaultid.toString(), tmp_rootf, CPGPUtils.getMasterKey(pkr));
         }
         finally {
@@ -202,8 +208,34 @@ public class CVault
             tmp_pubkey.delete();
         }
 
-        // 4. Save linked_vault settings.
-        return m_settings.addLinkedVault(vaultid, rootjs, pkr);
+        // 3. Create an empty local outbox and upload it
+        File local_outbox = CLinkedVault.createLocalOutboxFor(this, vaultid);
+        URL outbox_url = m_rprovider.upload
+            (new CUploadInfo
+             (local_outbox, true,
+              "outbox/"+m_settings.getGUID()+"/"+local_outbox.getName()),
+             monitor);
+
+        // 4. Create a new linked vault
+        CLinkedVault lv = new CLinkedVault
+            (this, vaultid, outbox_list_url, pubkey_url, pkr, outbox_url);
+        m_settings.addLinkedVault(lv);
+
+        // 5. Publish new outboxlist to vault
+        JSONObject olist = m_settings.publishOutboxList();
+        boolean ok = false;
+        try {
+            signAndUpload(m_settings, olist, "outbox_list.json",
+                          m_settings.getOutboxListURL(), monitor);
+            ok = true;
+        }
+        finally {
+            if (!ok) { m_settings.removeLinkedVault(lv); }
+        }
+
+        // 6. Save local settings
+        m_settings.saveVaultSettings();
+        return lv;
     }
 
     /**
@@ -249,7 +281,48 @@ public class CVault
             throw new IllegalArgumentException("Missing 'type'");
         }
 
-        throw new RuntimeException("tbd");
+        for (CLinkedVault recipient: recipients) {
+            // 1. Splice message into recipient outbox.
+            JSONObject outbox = recipient.mergeLocalOutbox(message);
+
+            // 2. If there were updates
+            if (outbox != null) {
+                byte[] buf = CUtils.getBytes(outbox.toString());
+                ByteArrayInputStream bin = new ByteArrayInputStream(buf);
+                long inlen = buf.length;
+                buf = null;
+
+                File tmp = File.createTempFile("thormor", "pgp");
+                BufferedOutputStream bout = null;
+                try {
+                    // 1. Encrypt new outbox to temp file
+                    List<PGPPublicKey> key = new ArrayList<PGPPublicKey>();
+                    key.add(recipient.getEncryptionKey());
+                    bout = new BufferedOutputStream
+                        (new FileOutputStream(tmp));
+                    CPGPUtils.encrypt
+                        (bin, inlen, bout, key,
+                         m_settings.getPublicSigningKey(),
+                         m_settings.getPrivateSigningKey(),
+                         "outbox.json", new Date());
+                    bout.close();
+                    bout = null;
+
+                    // 2. Upload encrypted outbox to target.
+                    m_rprovider.upload
+                        (new CUploadInfo
+                         (tmp, true, null, recipient.getPublishOutboxURL()),
+                         monitor);
+                }
+                finally {
+                    if (bout != null) {
+                        try { bout.close(); } 
+                        catch (IOException ioe) {}
+                    }
+                    tmp.delete();
+                }
+            }
+        }
     }
 
     /**
@@ -271,7 +344,41 @@ public class CVault
     public void fetchMessagesFrom(CLinkedVault lv, IProgressMonitor monitor)
         throws IOException
     {
-        throw new RuntimeException("tbd");
+        // 1. Poll vault for any changes in the outbox_list
+        File f = updateCache(lv.getOutboxListURL(), monitor, true);
+
+        // 2. Extract our list of outboxes, if any; and check that it
+        // was correctly signed.
+        JSONObject outbox_json = verifyJSON
+            (lv.getOutboxListURL().toString(), f, lv.getSigningKey());
+
+        JSONArray outbox_array = outbox_json.optJSONArray("outbox_list");
+        if (outbox_array == null) { return; }
+
+        List<URL> outboxes = new ArrayList<URL>();
+        for (int i=0; i<outbox_array.length(); i++) {
+            JSONObject outbox = outbox_array.optJSONObject(i);
+            if (outbox == null) { continue; }
+            String urlkey = outbox.optString("outbox");
+            if (urlkey == null) { continue; }
+
+            // Attempt to decode content as a URL if possible.
+            URL url = null;
+            try { url = new URL(decryptString(urlkey, lv.getSigningKey())); }
+            catch (Throwable ign) {}
+            if (url != null) { outboxes.add(url); }
+        }
+
+        // 2. For each outbox, poll for any changes.
+        for (URL outbox_url: outboxes) {
+            f = updateCache(outbox_url, monitor, false);
+            if (f == null) {
+                // no changes, skip.
+                continue;
+            }
+            // 3. Decrypt and store outbox contents
+            decryptOutbox(f, lv);
+        }
     }
 
     /**
@@ -388,7 +495,7 @@ public class CVault
         // 2. Upload
         try {
             return m_rprovider.upload
-                (new CUploadInfo(tmp, true, sha_out+".pgp"), monitor);
+                (new CUploadInfo(tmp,true,"content/"+sha_out+".pgp"), monitor);
         }
         finally {
             tmp.delete();
@@ -409,32 +516,21 @@ public class CVault
     {
         check(State.UNLOCKED);
 
-        File inf = m_lprovider.getFileFor(path+".pgp");
-
+        File inf = getSecureFile(path);
         if (!inf.exists()) { return null; }
 
-        // decrypt into memory.
-        BufferedInputStream inp = null;
-        MemoryStreamFactory memfact = new MemoryStreamFactory();
-        try {
-            inp =
-                new BufferedInputStream(new FileInputStream(inf));
-            CPGPUtils.decrypt
-                (inp, memfact, m_settings.getPrivateEncryptionKey(),
-                 m_settings.getPublicSigningKey());
-        }
-        finally {
-            if (inp != null) { inp.close(); }
-        }
+        return decryptStream(path, inf, m_settings.getPublicSigningKey());
+    }
 
-        // Check if we got satisfactory data in our memory.
-        ByteArrayOutputStream bout = memfact.getStream();
-        if (bout == null) {
-            throw new IOException("Failed to decrypt "+path);
-        }
-
-        // Return byte array as stream.
-        return new ByteArrayInputStream(bout.toByteArray());
+    /**
+     * Return the path to a file that is written when writeFileSecurely
+     * as called with the provided path.
+     *
+     */
+    public File getSecureFile(String path)
+    {
+        check(State.UNLOCKED);
+        return m_lprovider.getFileFor(path+".pgp");
     }
 
     /**
@@ -456,14 +552,27 @@ public class CVault
         ByteArrayOutputStream bout = new ByteArrayOutputStream();
         CUtils.copy(inp, bout);
         bout.close();
-
         byte buf[] = bout.toByteArray();
         bout = null;
+        writeFileSecurely(path, buf);
+    }
+
+    /**
+     * Save files locally, encrypted with the user's private
+     * key. Remote providers may use this for instance, to store
+     * authentication tokens.
+     *
+     * Note: The vault must be unlocked, or this method will raise
+     * an IllegalStateException
+     */
+    public void writeFileSecurely(String path, byte buf[])
+        throws IOException
+    {
+        check(State.UNLOCKED);
         ByteArrayInputStream bin = new ByteArrayInputStream(buf);
 
         // Write out encrypted file with myself as the recipient.
-        File outf = CUtils.makeParents
-            (m_lprovider.getFileFor(path+".pgp"));
+        File outf = CUtils.makeParents(getSecureFile(path));
         List<PGPPublicKey> me = new ArrayList<PGPPublicKey>();
         me.add(m_settings.getPublicEncryptionKey());
 
@@ -494,7 +603,7 @@ public class CVault
     IRemoteProvider getRemoteProvider()
     { return m_rprovider; }
 
-    // private
+    // private helpers
     private void check(State state)
     {
         if (getState() != state) {
@@ -513,8 +622,76 @@ public class CVault
         return ret;
     }
 
-    // decode and verify signed file as json
-    private JSONObject asJSON(String src, File f, PGPPublicKey from_pubkey)
+    // Create a unique file from a URL. etags and timestamps
+    // are potentially recorded in a file with the same name,
+    // but with a ".meta" extension.
+    private File getCacheFileFor(URL url)
+    {
+        return m_lprovider.getCacheFileFor
+            ("my/cached/"+CUtils.shasum(url.toString()));
+    }
+
+    // cache response from this url locally if possible, and return
+    // location of cached file.
+
+    private File updateCache(URL url, IProgressMonitor monitor,
+                             boolean always_return_file)
+        throws IOException
+    {
+        File file = getCacheFileFor(url);
+
+        String etag = null;
+        long timestamp = -1;
+
+        // Check if we have any metadata for this file.
+        File meta = new File(file.getParent(), file.getName()+".meta");
+        if (file.canRead() && meta.canRead()) {
+            JSONObject metajs = CUtils.readJSON(meta);
+            etag = metajs.optString("etag");
+            timestamp = metajs.optLong("timestamp", -1);
+        }
+
+        // Now download the file
+        CDownloadInfo di = new CDownloadInfo(url, file, true, timestamp, etag);
+        IRemoteProvider.DownloadStatus status =
+            m_rprovider.download(di, monitor);
+
+        // Update etag and timestamp if appropriate.
+        if ((timestamp != di.getTimestamp()) ||
+            ((etag == null) && (di.getEtag() != null)) ||
+            ((etag != null) && !etag.equals(di.getEtag()))) {
+            JSONObject metajs = new JSONObject();
+            CUtils.put(metajs, "timestamp", di.getTimestamp());
+            if (di.getEtag() != null) {
+                CUtils.put(metajs, "etag", di.getEtag());
+            }
+            CUtils.writeJSON(meta, metajs);
+        }
+
+        if (always_return_file ||
+            (status == IRemoteProvider.DownloadStatus.FULL_DOWNLOAD)) {
+            return file;
+        }
+        return null;
+    }
+
+    // attempt to decrypt signed string
+    private String decryptString(String src, PGPPublicKey from_pubkey)
+        throws IOException
+    {
+        ByteArrayOutputStream bout = new ByteArrayOutputStream();
+        SingleStreamFactory ssf = new SingleStreamFactory(bout);
+        ByteArrayInputStream bin =
+            new ByteArrayInputStream(CUtils.getBytes(src));
+        CPGPUtils.decrypt(bin, ssf, m_settings.getPrivateEncryptionKey(),
+                          from_pubkey);
+        bin.close(); bin = null;
+        if (ssf.hasFailed()) { return null; }
+        return new String(bout.toByteArray(), "utf-8");
+    }
+
+    // verify signed file as json
+    private JSONObject verifyJSON(String src, File f, PGPPublicKey from_pubkey)
         throws IOException
     {
         BufferedInputStream bin = null;
@@ -538,8 +715,19 @@ public class CVault
         }
     }
 
+    // decrypt and verify signed file as json
+    private JSONObject decryptJSON(String src, File f, PGPPublicKey from_pubkey)
+        throws IOException
+    {
+        String rootjs_s = new String(decryptBytes(src, f, from_pubkey),"utf-8");
+        try { return new JSONObject(rootjs_s); }
+        catch (JSONException jse) {
+            throw new IOException("bad root json: '"+rootjs_s+"' from "+src);
+        }
+    }
+
     private URL signAndUpload
-        (CSettings settings, JSONObject json, String name,
+        (CSettings settings, JSONObject json, String name, URL target,
          IProgressMonitor monitor)
         throws IOException
     {
@@ -564,12 +752,57 @@ public class CVault
 
         try {
             return m_rprovider.upload
-                (new CUploadInfo(tmp, true, name+".pgp"), monitor);
+                (new CUploadInfo(tmp, true, name+".pgp", target), monitor);
         }
         finally {
             tmp.delete();
         }
     }
+
+    // Given an encrypted outbox file, decrypt and save it in our
+    // message store.
+    private void decryptOutbox(File f, CLinkedVault lv)
+        throws IOException
+    {
+        // 1. Attempt to decrypt the file into memory
+        JSONObject inbox = decryptJSON
+            ("outbox from "+lv.getId(), f, lv.getSigningKey());
+
+        // 2. Save it under our message store under the key for this vault.
+        File inboxf = m_lprovider.getFileFor(lv.makeInboxRootPath());
+        CUtils.writeJSON(inboxf, inbox);
+    }
+
+    // Decrypt as memory stream
+    private InputStream decryptStream
+        (String msg, File inf, PGPPublicKey from_pubkey)
+        throws IOException
+    { return new ByteArrayInputStream(decryptBytes(msg, inf, from_pubkey)); }
+
+    // Decrypt into memory
+    private byte[] decryptBytes(String msg, File inf, PGPPublicKey from_pubkey)
+        throws IOException
+    {
+        BufferedInputStream inp = null;
+        MemoryStreamFactory memfact = new MemoryStreamFactory();
+        try {
+            inp =
+                new BufferedInputStream(new FileInputStream(inf));
+            CPGPUtils.decrypt
+                (inp, memfact,m_settings.getPrivateEncryptionKey(),from_pubkey);
+        }
+        finally {
+            if (inp != null) { inp.close(); }
+        }
+
+        // Check if we got satisfactory data in our memory.
+        ByteArrayOutputStream bout = memfact.getStream();
+        if (bout == null) {
+            throw new IOException("Failed to decrypt "+msg);
+        }
+        return bout.toByteArray();
+    }
+
 
     private final IRemoteProvider m_rprovider;
     private final ILocalProvider m_lprovider;

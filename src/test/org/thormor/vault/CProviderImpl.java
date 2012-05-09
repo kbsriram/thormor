@@ -82,8 +82,14 @@ public class CProviderImpl
         File src = info.getSource();
         assertTrue(src.exists());
 
-        // uploads locations are prefixed with local id
-        String path = m_lid+"/upload/"+info.getSuggestedName();
+        String path;
+        if (info.getUpdateURL() != null) {
+            path = info.getUpdateURL().getPath();
+        }
+        else {
+            // uploads locations are prefixed with local id
+            path = m_lid+"/upload/"+info.getSuggestedName();
+        }
 
         File target = new File(m_root, path);
 
@@ -116,6 +122,7 @@ public class CProviderImpl
     private final static void copy(File src, File target)
         throws IOException
     {
+        CUtils.makeParents(target);
         FileInputStream in = null;
         FileOutputStream out = null;
         try {

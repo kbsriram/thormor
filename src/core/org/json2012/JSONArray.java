@@ -649,6 +649,14 @@ public class JSONArray {
         return this;
     }
 
+    /**
+     * Insert an element at a specific location.
+     * @return this
+     */
+    public JSONArray put(Object value, int idx) {
+        this.myArrayList.add(idx, value);
+        return this;
+    }
 
     /**
      * Put or replace a boolean value in the JSONArray. If the index is greater

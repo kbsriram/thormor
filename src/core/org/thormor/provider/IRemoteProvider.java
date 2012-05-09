@@ -13,7 +13,8 @@ public interface IRemoteProvider
      * Upload a file to cloud storage, and update the monitor as the
      * upload proceeds.
      *
-     * @param info data about file to be uploaded
+     * @param info data about file to be uploaded, and a URL to upload
+     * or to update.
      * @param mon if not null, update with upload progress.
      *
      * @return URL to the final location of content.
@@ -34,6 +35,6 @@ public interface IRemoteProvider
         throws IOException;
 
     public enum DownloadStatus {
-        MISSING, NO_UPDATES, FULL_DOWNLOAD
+        NO_UPDATES, FULL_DOWNLOAD
     };
 }
