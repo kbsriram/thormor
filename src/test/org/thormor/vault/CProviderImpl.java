@@ -75,6 +75,11 @@ public class CProviderImpl
         return ret;
     }
 
+    public void postUnlockHook(CVault vault)
+    {
+        System.out.println("post-upload-hook called");
+    }
+
     public URL upload(CUploadInfo info, IProgressMonitor mon)
         throws IOException
     {

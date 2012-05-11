@@ -16,9 +16,13 @@
 
   <target name="init">
     <mkdir dir="${classes.dir}/core"/>
+    <mkdir dir="${classes.dir}/provider/local/homedir"/>
+    <mkdir dir="${classes.dir}/provider/remote/googlesites"/>
     <mkdir dir="${classes.dir}/test"/>
     <mkdir dir="${reports.dir}"/>
   </target>
+
+  <target name="compile" depends="core-compile,provider-compile"/>
 
   <target name="core-compile" depends="init">
     <javac source="${java.source}"
@@ -34,7 +38,44 @@
     </javac>
   </target>
 
-  <target name="test-compile" depends="core-compile">
+  <target name="provider-compile"
+          depends="provider-local-home,provider-remote-googlesites"/>
+
+  <target name="provider-local-home"
+          depends="core-compile">
+    <javac source="${java.source}"
+           target="${java.target}"
+           debug="true"
+           srcdir="${src.dir}/provider/local/homedir"
+           includeantruntime="false"
+           destdir="${classes.dir}/provider/local/homedir">
+      <compilerarg value="-Xlint:all"/>
+      <classpath>
+        <pathelement location="${classes.dir}/core"/>
+      </classpath>
+    </javac>
+  </target>
+
+  <target name="provider-remote-googlesites"
+          depends="core-compile">
+    <javac source="${java.source}"
+           target="${java.target}"
+           debug="true"
+           srcdir="${src.dir}/provider/remote/googlesites"
+           includeantruntime="false"
+           destdir="${classes.dir}/provider/remote/googlesites">
+      <compilerarg value="-Xlint:all"/>
+      <classpath>
+        <pathelement location="${classes.dir}/core"/>
+      </classpath>
+    </javac>
+    <!-- copy key.properties to classes as well -->
+    <copy file="${src.dir}/provider/remote/googlesites/org/thormor/provider/remote/googlesites/key.properties"
+          tofile="${classes.dir}/provider/remote/googlesites/org/thormor/provider/remote/googlesites/key.properties"/>
+  </target>
+
+
+  <target name="test-compile" depends="compile">
     <javac source="${java.source}"
            target="${java.target}"
            debug="true"
@@ -44,6 +85,8 @@
       <compilerarg value="-Xlint:all"/>
       <classpath>
         <pathelement location="${classes.dir}/core"/>
+        <pathelement location="${classes.dir}/provider/local/homedir"/>
+        <pathelement location="${classes.dir}/provider/remote/googlesites"/>
         <pathelement location="${lib.dir}/junit-4.10.jar"/>
       </classpath>
     </javac>
@@ -53,6 +96,8 @@
     <junit printsummary="yes" haltonfailure="yes">
       <classpath>
         <pathelement location="${classes.dir}/core"/>
+        <pathelement location="${classes.dir}/provider/local/homedir"/>
+        <pathelement location="${classes.dir}/provider/remote/googlesites"/>
         <path refid="bc.lib"/>
         <pathelement location="${classes.dir}/test"/>
         <pathelement location="${lib.dir}/junit-4.10.jar"/>
@@ -60,7 +105,7 @@
       <formatter type="plain"/>
       <batchtest todir="${reports.dir}">
         <fileset dir="${src.dir}/test">
-          <include name="**/*Test.java"/>
+          <include name="**/CGoogleSites*Test.java"/>
         </fileset>
       </batchtest>
     </junit>

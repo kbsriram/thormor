@@ -151,7 +151,15 @@ public class CVault
         throws CVaultException
     {
         check(State.LOCKED);
-        return m_settings.unlock(passphrase);
+        boolean ret = m_settings.unlock(passphrase);
+        if (ret) {
+            // call provider hook.
+            try { m_rprovider.postUnlockHook(this); }
+            catch (IOException ioe) {
+                throw new CVaultException(ioe);
+            }
+        }
+        return ret;
     }
 
     /**

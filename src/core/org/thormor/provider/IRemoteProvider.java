@@ -4,6 +4,7 @@ package org.thormor.provider;
  * Implement this interface to let thormor access your cloud storage.
  */
 
+import org.thormor.vault.CVault;
 import java.io.IOException;
 import java.net.URL;
 
@@ -32,6 +33,13 @@ public interface IRemoteProvider
      * @param mon if not null, update with upload progress.
      */
     public DownloadStatus download(CDownloadInfo info, IProgressMonitor mon)
+        throws IOException;
+
+    /**
+     * The vault calls this method every time it is unlocked. This is an
+     * opportunity to save or read secured access tokens and so on.
+     */
+    public void postUnlockHook(CVault vault)
         throws IOException;
 
     public enum DownloadStatus {
