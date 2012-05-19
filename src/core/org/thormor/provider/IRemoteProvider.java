@@ -24,6 +24,16 @@ public interface IRemoteProvider
         throws IOException;
 
     /**
+     * Delete a previously uploaded URL. The URL passed in is one
+     * that was previously returned via the upload() method.
+     * @see #upload(info, mon)
+     * @param a previously uploaded URL
+     * @param mon if not not null, update with delete progress
+     */
+    public void delete(URL url, IProgressMonitor mon)
+        throws IOException;
+
+    /**
      * Download a remote file, updating the monitor as the download
      * proceeds. You can update the last_modified and etag value in
      * the info parameter if necessary, for use in subsequent
@@ -34,6 +44,7 @@ public interface IRemoteProvider
      */
     public DownloadStatus download(CDownloadInfo info, IProgressMonitor mon)
         throws IOException;
+
 
     /**
      * The vault calls this method every time it is unlocked. This is an

@@ -67,13 +67,62 @@ public class CLinkedVault
     public URL getPublishOutboxURL()
     { return m_publish_outbox_url; }
 
+    /**
+     * A local name to refer to this linked vault.
+     * @see #setAlias
+     */
+    public String getAlias()
+    { return m_alias; }
+    /**
+     * Refer to this vault by another name.
+     * @see #getAlias
+     * @throws IOException if the settings could
+     * not be saved.
+     */
+    public void setAlias(String alias)
+        throws IOException
+    {
+        m_alias = alias;
+        m_root.getSettings().saveVaultSettings();
+    }
+
+    /**
+     * @return a JSONObject representing the locally cached
+     * set of messages sent to us from this vault (or null
+     * if none exists.)
+     */
+    public JSONObject readLocalInbox()
+        throws IOException
+    {
+        File inboxf = new File(getInboxRoot(), "inbox.json");
+        if (inboxf.canRead()) {
+            return CUtils.readJSON(inboxf);
+        }
+        else {
+            return null;
+        }
+    }
+
+    /**
+     * Return the root to a local inbox directory for content fetched
+     * from this vault.
+     */
+    public File getInboxRoot()
+    {
+        return
+            m_root
+            .getLocalProvider()
+            .getFileFor(getInboxRootPath());
+    }
+
     // package methods
     CLinkedVault
-        (CVault root, URL vaultid, URL outbox_list, URL pubkeyurl,
+        (CVault root, URL vaultid, String alias, URL outbox_list, URL pubkeyurl,
          PGPPublicKeyRing pkr, URL publish_outbox_url)
     {
         m_root = root;
         m_id = vaultid;
+        m_alias = alias;
         m_outbox_list_url = outbox_list;
         m_pubkey_url = pubkeyurl;
         m_pubkeyring = pkr;
@@ -86,10 +135,16 @@ public class CLinkedVault
         m_msg_key = CUtils.shasum(vaultid.toString());
     }
 
+    String getInboxRootPath()
+    { return "my/inbox/"+m_msg_key; }
+
+    String getInboxJSONPath()
+    { return getInboxRootPath()+"/inbox.json"; }
 
     // take the provided message and merge it into the current
     // outbox message store. Return back the merged message outbox
     // if there were changes, or null.
+    // Important - changes are not persisted.
     JSONObject mergeLocalOutbox(JSONObject msg)
         throws IOException
     {
@@ -109,8 +164,7 @@ public class CLinkedVault
         }
         // splice message into head of our entries.
         entries.put(msg, 0);
-        // save outbox
-        return writeLocalOutbox(m_root, m_msg_key, outbox);
+        return outbox;
     }
 
     JSONObject readLocalOutbox()
@@ -133,6 +187,11 @@ public class CLinkedVault
         }
     }
 
+
+    JSONObject writeLocalOutbox(JSONObject json)
+        throws IOException
+    { return writeLocalOutboxStatic(m_root, m_msg_key, json); }
+
     // package protected static
     static File createLocalOutboxFor(CVault root, URL vaultid)
         throws IOException
@@ -146,26 +205,26 @@ public class CLinkedVault
             JSONObject empty = new JSONObject();
             CUtils.put(empty, "version", 1);
             CUtils.put(empty, "entries", new JSONArray());
-            writeLocalOutbox(root, msg_key, empty);
+            writeLocalOutboxStatic(root, msg_key, empty);
         }
         return local_outbox;
     }
 
-    String makeInboxRootPath()
-    { return "my/inbox/"+m_msg_key+"/inbox.json"; }
 
     // private methods
-    private static JSONObject writeLocalOutbox
-        (CVault root, String key, JSONObject json)
-        throws IOException
-    {
-        root.writeFileSecurely
-            (makeLocalOutboxPath(key), CUtils.getBytes(json.toString()));
-        return json;
-    }
 
     private static String makeLocalOutboxPath(String key)
     { return "my/outbox/"+key; }
+
+    private final static JSONObject writeLocalOutboxStatic
+        (CVault root, String msg_key, JSONObject json)
+        throws IOException
+    {
+        root.writeFileSecurely
+            (makeLocalOutboxPath(msg_key),
+             CUtils.getBytes(json.toString()));
+        return json;
+    }
 
     private final CVault m_root;
     private final URL m_id;
@@ -176,4 +235,5 @@ public class CLinkedVault
     private final PGPPublicKeyRing m_pubkeyring;
     private final PGPPublicKey m_enckey;
     private final PGPPublicKey m_signkey;
+    private String m_alias;
 }

@@ -83,10 +83,12 @@ public class CProviderImpl
     public URL upload(CUploadInfo info, IProgressMonitor mon)
         throws IOException
     {
-        // copy src to a temp location
         File src = info.getSource();
         assertTrue(src.exists());
-
+        if (m_fail_upload) {
+            throw new IOException("Request to fail upload");
+        }
+        // copy src to a temp location
         String path;
         if (info.getUpdateURL() != null) {
             path = info.getUpdateURL().getPath();
@@ -104,10 +106,26 @@ public class CProviderImpl
         return new URL("http://www.example.com/"+path);
     }
 
+    public void delete(URL url, IProgressMonitor mon)
+        throws IOException
+    {
+        File target = new File(m_root, url.getPath());
+        System.out.println("delete: "+url+" at "+target);
+        if (!target.exists()) {
+            throw new IOException("Did not find "+target);
+        }
+        target.delete();
+    }
+
     File uploadedFile(String path)
     {
         return new File(m_root, m_lid+"/upload/"+path);
     }
+
+    void failUploads(boolean v)
+    { m_fail_upload = v; }
+    void failDownloads(boolean v)
+    { m_fail_download = v; }
 
     public DownloadStatus download
         (CDownloadInfo info, IProgressMonitor mon)
@@ -123,6 +141,8 @@ public class CProviderImpl
 
     private final File m_root;
     private final String m_lid;
+    private boolean m_fail_upload = false;
+    private boolean m_fail_download = false;
 
     private final static void copy(File src, File target)
         throws IOException

@@ -145,6 +145,15 @@ class CSettings
     { return m_linked.get(url); }
     List<CLinkedVault> getLinkedVaults()
     { return new ArrayList<CLinkedVault>(m_linked.values()); }
+    CLinkedVault getLinkedVaultByAlias(String alias)
+    {
+        for (CLinkedVault lv: m_linked.values()) {
+            if (alias.equals(lv.getAlias())) {
+                return lv;
+            }
+        }
+        return null;
+    }
 
     void addLinkedVault(CLinkedVault lv)
         throws IOException
@@ -258,6 +267,10 @@ class CSettings
                 CUtils.put
                     (outbox_info,"publish_url",
                      lv.getPublishOutboxURL().toString());
+                String alias = lv.getAlias();
+                if (alias != null) {
+                    CUtils.put(outbox_info, "alias", alias);
+                }
             }
         }
 
@@ -314,6 +327,7 @@ class CSettings
                 CLinkedVault lv = null;
                 if (outbox_info.optString("vault_id") != null) {
                     URL vaultid = new URL(outbox_info.optString("vault_id"));
+                    String alias = outbox_info.optString("alias");
                     URL outbox_list =
                         new URL(outbox_info.getString("outbox_list"));
                     URL pubkey = new URL(outbox_info.getString("public_key"));
@@ -322,7 +336,7 @@ class CSettings
                     PGPPublicKeyRing pkr = string2Ring
                         (outbox_info.getString("public_key_data"));
                     lv = new CLinkedVault
-                        (m_vault,vaultid,outbox_list,pubkey,pkr,outbox_url);
+                        (m_vault,vaultid,alias,outbox_list,pubkey,pkr,outbox_url);
                     m_linked.put(vaultid, lv);
                 }
                 m_outboxinfo.add(new OutboxInfo(urlkey, lv));

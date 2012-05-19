@@ -18,11 +18,26 @@
     <mkdir dir="${classes.dir}/core"/>
     <mkdir dir="${classes.dir}/provider/local/homedir"/>
     <mkdir dir="${classes.dir}/provider/remote/googlesites"/>
+    <mkdir dir="${classes.dir}/cli"/>
     <mkdir dir="${classes.dir}/test"/>
     <mkdir dir="${reports.dir}"/>
   </target>
 
-  <target name="compile" depends="core-compile,provider-compile"/>
+  <target name="compile"
+          depends="core-compile,provider-compile,cli-compile"/>
+
+  <target name="javadoc"
+          depends="compile">
+    <javadoc
+        destdir="${basedir}/javadoc">
+      <sourcepath>
+        <pathelement path="${src.dir}/core"/>
+        <pathelement path="${src.dir}/provider/local/homedir"/>
+        <pathelement path="${src.dir}/provider/remote/googlesites"/>
+      </sourcepath>
+    </javadoc>
+  </target>
+    
 
   <target name="core-compile" depends="init">
     <javac source="${java.source}"
@@ -36,6 +51,42 @@
         <path refid="bc.lib"/>
       </classpath>
     </javac>
+  </target>
+
+  <target name="cli-compile"
+          depends="provider-compile">
+    <javac source="${java.source}"
+           target="${java.target}"
+           debug="true"
+           srcdir="${src.dir}/cli"
+           includeantruntime="false"
+           destdir="${classes.dir}/cli">
+      <compilerarg value="-Xlint:all"/>
+      <classpath>
+        <pathelement location="${classes.dir}/core"/>
+        <path refid="bc.lib"/>
+        <pathelement location="${classes.dir}/provider/local/homedir"/>
+        <pathelement location="${classes.dir}/provider/remote/googlesites"/>
+      </classpath>
+    </javac>
+  </target>
+
+  <target name="cli-jar"
+          depends="cli-compile">
+    <jar destfile="${classes.dir}/thormor-cli.jar">
+      <fileset dir="${classes.dir}/core"/>
+      <fileset dir="${classes.dir}/provider/local/homedir"/>
+      <fileset dir="${classes.dir}/provider/remote/googlesites"/>
+      <fileset dir="${classes.dir}/cli"/>
+      <zipfileset includes="**/*.class"
+                  src="${lib.dir}/bcprov-jdk15on-147.jar"/>
+      <zipfileset includes="**/*.class"
+                  src="${lib.dir}/bcpg-jdk15on-147.jar"/>
+      <manifest>
+        <attribute name="Main-Class"
+                   value="org.thormor.cli.CMain"/>
+      </manifest>
+    </jar>
   </target>
 
   <target name="provider-compile"
@@ -105,7 +156,8 @@
       <formatter type="plain"/>
       <batchtest todir="${reports.dir}">
         <fileset dir="${src.dir}/test">
-          <include name="**/CGoogleSites*Test.java"/>
+          <!-- <include name="**/CGoogleSites*Test.java"/> -->
+          <include name="**/CVault*Test.java"/>
         </fileset>
       </batchtest>
     </junit>

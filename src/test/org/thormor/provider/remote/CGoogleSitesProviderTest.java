@@ -4,6 +4,8 @@ import org.thormor.provider.remote.googlesites.CGoogleSitesProvider;
 import org.thormor.provider.remote.googlesites.CSiteInfo;
 import org.thormor.vault.CVault;
 import org.thormor.provider.CUploadInfo;
+import org.thormor.provider.CDownloadInfo;
+import org.thormor.provider.IRemoteProvider;
 
 import org.junit.Test;
 import org.junit.Before;
@@ -16,7 +18,7 @@ import java.net.URL;
 
 public class CGoogleSitesProviderTest
 {
-    @Test public void checkSaveTokens()
+    /*@Test*/ public void checkSaveTokens()
         throws IOException
     {
         CGoogleSitesProvider rprov =
@@ -58,7 +60,29 @@ public class CGoogleSitesProviderTest
         }
     }
 
-    @Test public void checkUpload()
+    @Test public void checkDownload()
+        throws IOException
+    {
+        // We should always be able to download arbitrary
+        // files.
+        CGoogleSitesProvider rprov =
+            new CGoogleSitesProvider("vault", "Thormor Vault");
+        File tmp = File.createTempFile("thormortest", null);
+        URL src = new URL("http://www.google.com/favicon.ico");
+        CDownloadInfo di = new CDownloadInfo(src, tmp, true, 0, null);
+
+        assertEquals(IRemoteProvider.DownloadStatus.FULL_DOWNLOAD,
+                     rprov.download(di, null));
+
+        // the timestamp should be set after download.
+        assertTrue(di.getTimestamp() > 0);
+
+        // second time, expect no changes.
+        assertEquals(IRemoteProvider.DownloadStatus.NO_UPDATES,
+                     rprov.download(di, null));
+    }
+
+    /*@Test*/ public void checkUpload()
         throws IOException
     {
         CGoogleSitesProvider rprov =
@@ -79,10 +103,9 @@ public class CGoogleSitesProviderTest
         ui = new CUploadInfo(pkr, true, null, ret);
         assertEquals(ret, rprov.upload(ui, null));
 
-        // Finally, remove the file.
-        ui = new CUploadInfo(null, true, null, ret);
-        rprov.remove(ui, null);
+        // Finally, delete the uploaded file.
+        rprov.delete(ret, null);
     }
 
-    private final static String PASS = "XXX";
+    private final static String PASS = "Should this ?password be used now?";
 }

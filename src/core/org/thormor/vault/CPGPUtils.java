@@ -110,10 +110,10 @@ class CPGPUtils
                     break;
                 }
                 catch (PGPException pge) {
-                    s_logger.info("Skip session for someone else");
+                    // s_logger.info("Skip session for someone else");
                 }
                 catch (RuntimeCryptoException rce) {
-                    s_logger.info("Skip session for someone else");
+                    // s_logger.info("Skip session for someone else");
                 }
             }
             if (!ok) {

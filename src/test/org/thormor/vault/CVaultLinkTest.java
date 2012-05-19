@@ -6,6 +6,7 @@ import org.junit.After;
 import static org.junit.Assert.*;
 
 import org.json2012.JSONObject;
+import org.json2012.JSONArray;
 import org.json2012.JSONException;
 
 import java.io.File;
@@ -37,7 +38,7 @@ public class CVaultLinkTest
 
 
         // Subscribe vault-b to vault-a
-        vault_b.linkVault(vault_a.getId(), null);
+        vault_b.linkVault(vault_a.getId(), null, null);
 
         // Reload vault-b
         vault_b = new CVault(prov_b, prov_b);
@@ -49,9 +50,12 @@ public class CVaultLinkTest
         assertNotNull(vault_b.getLinkedVaultById(vault_a.getId()));
 
         // Subscribe vault-a to vault-b
-        vault_a.linkVault(vault_b.getId(), null);
+        vault_a.linkVault(vault_b.getId(), null, null);
 
-        // vault-b uploads random content for vault-a
+        // For kicks, vault_b links to itself as well.
+        vault_b.linkVault(vault_b.getId(), "self", null);
+
+        // vault-b uploads random content for itself and vault-a
         File tmp = File.createTempFile("thormor_test", null);
         PrintWriter pw = null;
         URL ref = null;
@@ -94,5 +98,24 @@ public class CVaultLinkTest
 
         // vault-a updates message store from vault-b
         vault_a.fetchMessages(null);
+
+        // test that messages are persisted only after
+        // delivery by making the provider fail on uploads.
+        prov_b.failUploads(true);
+        message.put("id", "b");
+        try {
+            vault_b.postMessage(vault_b.getLinkedVaults(), message, null);
+            fail("How did this message get through?");
+        }
+        catch (IOException ioe) {
+        }
+        // verify that our outbox only has the one message.
+        CLinkedVault linkedvault_a = vault_b.getLinkedVaults().get(0);
+        JSONObject outbox_a = linkedvault_a.readLocalOutbox();
+        JSONArray entries = outbox_a.getJSONArray("entries");
+        assertEquals(1, entries.length());
+        JSONObject entry = entries.getJSONObject(0);
+        assertEquals("a", entry.getString("id"));
+        assertEquals("world", entry.getString("hello"));
     }
 }

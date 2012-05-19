@@ -22,6 +22,7 @@ import java.io.OutputStream;
 import java.io.OutputStreamWriter;
 import java.io.File;
 import java.io.FileInputStream;
+import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.UnsupportedEncodingException;
 
@@ -33,6 +34,10 @@ import java.net.URLEncoder;
 import java.util.Map;
 import java.util.List;
 import java.util.ArrayList;
+import java.util.Date;
+import java.util.TimeZone;
+import java.text.SimpleDateFormat;
+import java.text.ParseException;
 
 import org.json2012.JSONObject;
 import org.json2012.JSONArray;
@@ -168,7 +173,7 @@ class U
         throws IOException
     {
         if (mon != null) {
-            mon.status("Connecting to url");
+            mon.status("Fetching "+url);
         }
         URLConnection con = url.openConnection();
         auth(con, atok);
@@ -180,17 +185,25 @@ class U
         throws IOException
     {
         if (mon != null) {
-            mon.status("Connecting to "+url);
+            mon.status("Posting to "+url);
         }
 
         URLConnection con = url.openConnection();
         con.setDoOutput(true);
         auth(con, atok);
-        con.setRequestProperty("Content-type", "application/octet-stream");
+        con.setRequestProperty("Content-type", "application/atom+xml");
         OutputStreamWriter wr = new OutputStreamWriter(con.getOutputStream());
         wr.write(content);
         wr.flush();
         return con.getInputStream();
+    }
+
+    static String epoch2str(long msec)
+    {
+        if (msec <= 0) { return null; }
+        synchronized(s_dateformat) {
+            return s_dateformat.format(new Date(msec));
+        }
     }
 
     static InputStream authPostMulti
@@ -198,7 +211,7 @@ class U
         throws IOException
     {
         if (mon != null) {
-            mon.status("Connecting to "+url);
+            mon.status("Uploading to "+url);
         }
 
         URLConnection con = url.openConnection();
@@ -228,7 +241,7 @@ class U
         throws IOException
     {
         if (mon != null) {
-            mon.status("Connecting to "+url);
+            mon.status("Updating "+url);
         }
 
         HttpURLConnection con = (HttpURLConnection)url.openConnection();
@@ -249,7 +262,7 @@ class U
         throws IOException
     {
         if (mon != null) {
-            mon.status("Connecting to "+url);
+            mon.status("Deleting "+url);
         }
 
         HttpURLConnection con = (HttpURLConnection)url.openConnection();
@@ -257,6 +270,31 @@ class U
         auth(con, atok);
         con.setRequestProperty("If-Match", "*");
         return con.getInputStream();
+    }
+
+    static void copy(InputStream inp, File target)
+        throws IOException
+    {
+        FileOutputStream fout = null;
+        boolean ok = false;
+        try {
+            fout = new FileOutputStream(target);
+            byte[] buf = new byte[8192];
+            int nread;
+
+            while ((nread = inp.read(buf)) > 0) {
+                fout.write(buf, 0, nread);
+            }
+            ok = true;
+        }
+        finally {
+            if (fout != null) {
+                try { fout.close(); } catch (IOException ign) {}
+            }
+            if (!ok) {
+                target.delete();
+            }
+        }
     }
 
     static void copy(File src, OutputStream out)
@@ -284,7 +322,7 @@ class U
         throws IOException
     {
         if (mon != null) {
-            mon.status("Connecting to "+url);
+            mon.status("Posting to "+url);
         }
         URLConnection con = url.openConnection();
         con.setDoOutput(true);
@@ -349,4 +387,10 @@ class U
     }
 
     private final static String BOUNDARY = "THIS_IS_A_BOUNDARY";
+    private final static SimpleDateFormat s_dateformat;
+    static
+    {
+        s_dateformat = new SimpleDateFormat("EEE, dd MMM yyyy HH:mm:ss zzz");
+        s_dateformat.setTimeZone(TimeZone.getTimeZone("GMT"));
+    }
 }

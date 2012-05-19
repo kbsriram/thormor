@@ -47,6 +47,19 @@ public class CVault
         UNINITIALIZED, LOCKED, UNLOCKED
     };
 
+    /**
+     * Name for the id field in a message.
+     */
+    public final static String MESSAGE_ID = "id";
+    /**
+     * Name for the type field in a message.
+     */
+    public final static String MESSAGE_TYPE = "type";
+    /**
+     * Name for the timestamp field in a message.
+     */
+    public final static String MESSAGE_CREATED = "created";
+
     public CVault(IRemoteProvider rp, ILocalProvider lp)
         throws CVaultException
     {
@@ -74,6 +87,16 @@ public class CVault
     {
         check(State.UNLOCKED);
         return m_settings.getSelfURL();
+    }
+
+    /**
+     * Return the fingerprint for the keys used to manage this vault.
+     * This method may be called only when the vault is unlocked.
+     */
+    public byte[] getFingerprint()
+    {
+        check(State.UNLOCKED);
+        return m_settings.getPublicSigningKey().getFingerprint();
     }
 
     /**
@@ -132,13 +155,16 @@ public class CVault
             signAndUpload
             (tmpsettings, root_json, "root.json", null, monitor);
 
-        // 5. All done. Initialize settings and save it.
+        // 5. Initialize settings and save it.
         CUtils.put(root_json, "self", root_url.toString());
         CUtils.put(root_json, "guid", UUID.randomUUID().toString());
         m_settings =
             CSettings.createEmpty(this, root_json, pkr, skr, passphrase);
         m_settings.saveKeys();
         m_settings.saveVaultSettings();
+        // 6. Call postunlock hook to let any providers also
+        // save tokens securely.
+        m_rprovider.postUnlockHook(this);
     }
 
     /**
@@ -167,11 +193,14 @@ public class CVault
      * and save its data locally.
      *
      * @param vaultid is the id of the vault to be linked.
+     * @param alias is an optional name to associate with this vault, and
+     *  can be null.
      * @param monitor to follow the progress of the download.
      * @return the CLinkedVault instance added to the list of
      * linked vaults.
      */
-    public CLinkedVault linkVault(URL vaultid, IProgressMonitor monitor)
+    public CLinkedVault linkVault
+        (URL vaultid, String alias, IProgressMonitor monitor)
         throws IOException
     {
         check(State.UNLOCKED);
@@ -226,7 +255,7 @@ public class CVault
 
         // 4. Create a new linked vault
         CLinkedVault lv = new CLinkedVault
-            (this, vaultid, outbox_list_url, pubkey_url, pkr, outbox_url);
+            (this, vaultid, alias, outbox_list_url, pubkey_url, pkr, outbox_url);
         m_settings.addLinkedVault(lv);
 
         // 5. Publish new outboxlist to vault
@@ -256,6 +285,15 @@ public class CVault
     { return m_settings.getLinkedVaultById(vaultid); }
 
     /**
+     * Given an alias, fetch the linked vault if available.
+     *
+     * @param alias for the vault.
+     * @return null if there is no vault with that alias.
+     */
+    public CLinkedVault getLinkedVaultByAlias(String alias)
+    { return m_settings.getLinkedVaultByAlias(alias); }
+
+    /**
      * Fetch a list of all vaults linked to this one.
      */
     public List<CLinkedVault> getLinkedVaults()
@@ -274,21 +312,24 @@ public class CVault
      * of the required fields.
      */
     public void postMessage
-        (List<CLinkedVault> recipients, JSONObject message,
+        (List<CLinkedVault> recipients,  JSONObject message,
          IProgressMonitor monitor)
         throws IOException
     {
-        // 0. Verify message has basic types.
-        if (message.optString("id") == null) {
-            throw new IllegalArgumentException("Missing 'id'");
+        // Verify required fields.
+        if (message.optString(MESSAGE_ID) == null) {
+            throw new IllegalArgumentException("missing 'id'");
         }
-        if (message.optLong("created", -5) == -5) {
-            throw new IllegalArgumentException("Missing 'created'");
+        if (message.optString(MESSAGE_TYPE) == null) {
+            throw new IllegalArgumentException("missing 'type'");
         }
-        if (message.optString("type") == null) {
-            throw new IllegalArgumentException("Missing 'type'");
+        if (message.optLong(MESSAGE_CREATED) == 0) {
+            throw new IllegalArgumentException("missing 'created'");
         }
-
+        if (recipients.size() == 0) {
+            throw new IllegalArgumentException
+                ("Must have atleast one recipient");
+        }
         for (CLinkedVault recipient: recipients) {
             // 1. Splice message into recipient outbox.
             JSONObject outbox = recipient.mergeLocalOutbox(message);
@@ -302,6 +343,7 @@ public class CVault
 
                 File tmp = File.createTempFile("thormor", "pgp");
                 BufferedOutputStream bout = null;
+                boolean ok = false;
                 try {
                     // 1. Encrypt new outbox to temp file
                     List<PGPPublicKey> key = new ArrayList<PGPPublicKey>();
@@ -321,6 +363,7 @@ public class CVault
                         (new CUploadInfo
                          (tmp, true, null, recipient.getPublishOutboxURL()),
                          monitor);
+                    ok = true;
                 }
                 finally {
                     if (bout != null) {
@@ -328,6 +371,10 @@ public class CVault
                         catch (IOException ioe) {}
                     }
                     tmp.delete();
+                    if (ok) {
+                        // persist changes.
+                        recipient.writeLocalOutbox(outbox);
+                    }
                 }
             }
         }
@@ -411,8 +458,6 @@ public class CVault
         BufferedInputStream bin = null;
         try {
             // 1. Download data to temporary file.
-            CDownloadInfo di = new CDownloadInfo
-                (source, target, true, -1, null);
             m_rprovider.download
                 (new CDownloadInfo(source, tmp, true, -1, null),
                  monitor);
@@ -421,7 +466,7 @@ public class CVault
             bin = new BufferedInputStream
                 (new FileInputStream(tmp));
             bout = new BufferedOutputStream
-                (new FileOutputStream(target));
+                (new FileOutputStream(CUtils.makeParents(target)));
             SingleStreamFactory ssf = new SingleStreamFactory(bout);
             CPGPUtils.decrypt(bin, ssf, 
                               m_settings.getPrivateEncryptionKey(),
@@ -465,6 +510,10 @@ public class CVault
     {
         check(State.UNLOCKED);
 
+        if (recipients.size() == 0) {
+            throw new IllegalArgumentException
+                ("Must have atleast one recipient");
+        }
         // 1. Encrypt to temporary file
         long inlen = source.length();
         List<PGPPublicKey> keys = getKeys(recipients);
@@ -604,12 +653,13 @@ public class CVault
         }
     }
 
-
     // package protected
     ILocalProvider getLocalProvider()
     { return m_lprovider; }
     IRemoteProvider getRemoteProvider()
     { return m_rprovider; }
+    CSettings getSettings()
+    { return m_settings; }
 
     // private helpers
     private void check(State state)
@@ -635,8 +685,9 @@ public class CVault
     // but with a ".meta" extension.
     private File getCacheFileFor(URL url)
     {
-        return m_lprovider.getCacheFileFor
-            ("my/cached/"+CUtils.shasum(url.toString()));
+        return CUtils.makeParents
+            (m_lprovider.getCacheFileFor
+             ("my/cached/"+CUtils.shasum(url.toString())));
     }
 
     // cache response from this url locally if possible, and return
@@ -773,11 +824,23 @@ public class CVault
         throws IOException
     {
         // 1. Attempt to decrypt the file into memory
-        JSONObject inbox = decryptJSON
-            ("outbox from "+lv.getId(), f, lv.getSigningKey());
+        JSONObject inbox;
+        try {
+            inbox = decryptJSON
+                ("outbox from "+lv.getId(), f, lv.getSigningKey());
+        }
+        catch (IOException ioe) {
+            // Ignore errors here -- the vault may be unreachable, or
+            // not fully initialized.
+            System.out.println
+                ("Messages from "+((lv.getAlias()!=null)?
+                                 lv.getAlias():lv.getId())+
+                 " currently unavailable, try later.");
+            return;
+        }
 
         // 2. Save it under our message store under the key for this vault.
-        File inboxf = m_lprovider.getFileFor(lv.makeInboxRootPath());
+        File inboxf = m_lprovider.getFileFor(lv.getInboxJSONPath());
         CUtils.writeJSON(inboxf, inbox);
     }
 

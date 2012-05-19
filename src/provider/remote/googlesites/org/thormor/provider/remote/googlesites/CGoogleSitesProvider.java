@@ -30,6 +30,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.ArrayList;
 import java.net.URL;
+import java.net.HttpURLConnection;
 import java.net.MalformedURLException;
 
 import org.json2012.JSONObject;
@@ -143,8 +144,16 @@ public class CGoogleSitesProvider
              (new URL("https://sites.google.com/feeds/site/site"),
               m_access_token, mon));
         for (Element entry: U.getChildren(feed, "entry")) {
-            ret.add(new CSiteInfo
-                    (U.textUnder(U.getChild(entry, "sites:siteName"))));
+            // spot check that the site hasn't been deleted.
+            String sitename = U.textUnder(U.getChild(entry, "sites:siteName"));
+            try {
+                discardStream
+                    (U.authGet
+                     (new URL("https://sites.google.com/feeds/site/site/"+
+                              sitename), m_access_token, mon), mon);
+                ret.add(new CSiteInfo(sitename));
+            }
+            catch (IOException ign) {}
         }
         return ret;
     }
@@ -267,7 +276,7 @@ public class CGoogleSitesProvider
         }
     }
 
-    public void remove(CUploadInfo info, IProgressMonitor mon)
+    public void delete(URL url, IProgressMonitor mon)
         throws IOException
     {
         maybeRefreshTokens(mon);
@@ -275,15 +284,69 @@ public class CGoogleSitesProvider
             throw new IllegalStateException("missing vault info");
         }
 
-        URL prior = info.getUpdateURL();
-        URL editurl = new URL(findEditURL(prior, "edit", mon));
-        delete(editurl, mon);
+        URL editurl = new URL(findEditURL(url, "edit", mon));
+        doDelete(editurl, mon);
     }
 
     public DownloadStatus download(CDownloadInfo info, IProgressMonitor mon)
         throws IOException
     {
-        throw new IOException("tbd");
+        URL src = info.getSource();
+        int redir_count = 0;
+        String modts = null;
+        if (info.getTimestamp() > 0) {
+            modts = U.epoch2str(info.getTimestamp());
+        }
+        String etag = info.getEtag();
+
+        while (redir_count++ < 5) {
+            if (mon != null) {
+                mon.status("Downloading "+src);
+            }
+
+            HttpURLConnection con = (HttpURLConnection) src.openConnection();
+            if (modts != null) {
+                con.setRequestProperty("if-modified-since", modts);
+            }
+            if (etag != null) {
+                con.setRequestProperty("if-none-match", info.getEtag());
+            }
+
+            int code = con.getResponseCode();
+            // process as appropriate
+            if (code == HttpURLConnection.HTTP_NOT_MODIFIED) {
+                return DownloadStatus.NO_UPDATES;
+            }
+            if (code == HttpURLConnection.HTTP_OK) {
+                U.copy(con.getInputStream(), info.getTarget());
+                // Set any timestamps or etags
+                info.setTimestamp(con.getHeaderFieldDate("last-modified", 0));
+                info.setEtag(con.getHeaderField("etag"));
+                return DownloadStatus.FULL_DOWNLOAD;
+            }
+            // check for redirects
+            if ((code == HttpURLConnection.HTTP_MOVED_TEMP) ||
+                (code == HttpURLConnection.HTTP_MOVED_PERM)) {
+                src = new URL(con.getHeaderField("location"));
+                continue;
+            }
+
+            // bail appropriately on 400, which are effectively
+            // permanent errors.
+            if ((code >= 400) && (code < 500)) {
+                throw new IOException
+                    (src+" returned "+code+": "+ con.getResponseMessage());
+            }
+            // bail on 500s, which may be temporary errors
+            if ((code >= 500) && (code < 600)) {
+                throw new RetryException
+                    (src+" returned "+code+": "+con.getResponseMessage());
+            }
+            // bail because we're dumb.
+            throw new IOException
+                (src+" returned "+code+": "+con.getResponseMessage());
+        }
+        throw new IOException("Too many redirects");
     }
 
     /**
@@ -424,7 +487,7 @@ public class CGoogleSitesProvider
         }
     }
 
-    private void delete(URL url, IProgressMonitor mon)
+    private void doDelete(URL url, IProgressMonitor mon)
         throws IOException
     { discardStream(U.authDelete(url, m_access_token, mon), mon); }
 
@@ -465,6 +528,18 @@ public class CGoogleSitesProvider
     {
         static final long serialVersionUID = -3978564992459198545L;
         public CredentialsException(String s)
+        { super(s); }
+    }
+
+    /**
+     * This exception is thrown if the provider believes that
+     * this may be a temporary situation.
+     */
+    public static class RetryException
+        extends IOException
+    {
+        static final long serialVersionUID = -8971373237370823162L;
+        public RetryException(String s)
         { super(s); }
     }
 }
