@@ -1,12 +1,13 @@
 package org.thormor.provider;
 
-/**
- * This class contains information about a file that needs to be uploaded.
- * @see IRemoteProvider#upload(info, mon)
- */
 
 import java.io.File;
 import java.net.URL;
+
+/**
+ * This class contains information about a file that needs to be uploaded.
+ * @see IRemoteProvider#upload(CUploadInfo, IProgressMonitor)
+ */
 
 public class  CUploadInfo
 {

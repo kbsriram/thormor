@@ -35,6 +35,12 @@
         <pathelement path="${src.dir}/provider/local/homedir"/>
         <pathelement path="${src.dir}/provider/remote/googlesites"/>
       </sourcepath>
+      <classpath>
+        <pathelement location="${classes.dir}/core"/>
+        <pathelement location="${classes.dir}/provider/local/homedir"/>
+        <pathelement location="${classes.dir}/provider/remote/googlesites"/>
+        <path refid="bc.lib"/>
+      </classpath>
     </javadoc>
   </target>
     

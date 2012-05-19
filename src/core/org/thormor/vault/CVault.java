@@ -1,9 +1,5 @@
 package org.thormor.vault;
 
-/**
- * A vault represents secured online storage; and you can fetch or add
- * content to it.
- */
 
 import org.thormor.provider.IRemoteProvider;
 import org.thormor.provider.ILocalProvider;
@@ -40,6 +36,11 @@ import java.util.UUID;
 import java.security.DigestOutputStream;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
+
+/**
+ * A vault represents secured online storage; and you can fetch or add
+ * content to it.
+ */
 
 public class CVault
 {
@@ -104,7 +105,7 @@ public class CVault
      * any existing vault data. As a safety measure, a new vault can
      * only be created if it is in the UNINITIALIZED state.
      *
-     * @param phrase to use to lock the vault
+     * @param passphrase to use to lock the vault
      * @param monitor is a progress monitor to recieve status updates.
      */
     public void createVault(String passphrase, IProgressMonitor monitor)
@@ -305,7 +306,7 @@ public class CVault
      * particular "id" (a unique message string), "type" (a string naming
      * the type of message) and "created" (a long milliseconds from epoch)
      *
-     * @param recipents is the list of linked vaults who can read the message
+     * @param recipients is the list of linked vaults who can read the message
      * @param message is an generic json, subject to the above restrictions.
      * @param monitor to monitor the status of the request.
      * @throws IllegalArgumentException if the json object is missing any
@@ -498,7 +499,7 @@ public class CVault
      * refers to additional files, you must first upload those files
      * with this method, and use the returned URLs in the json message.
      *
-     * @param repicients are a list of linked vaults who can read this
+     * @param recipients are a list of linked vaults who can read this
      * file.
      * @param source is a file to be stored.
      * @param monitor tracks the progress of the operation.

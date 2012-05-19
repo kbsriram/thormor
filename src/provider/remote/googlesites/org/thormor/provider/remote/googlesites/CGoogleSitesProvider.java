@@ -46,11 +46,11 @@ public class CGoogleSitesProvider
      * Create an unauthenticated provider. The provider will
      * still need to obtain authorization tokens in order to
      * actually store files to storage.
-     * @see #setAuthorizationCode(code)
      *
      * @param vault_path is the path of the filecabinet where
      * uploaded files will be placed.
      * @param vault_name is the page name of the filecabinet
+     * @see #setAuthorizationCode(String,IProgressMonitor)
      */
     public CGoogleSitesProvider(String vault_path, String vault_name)
     {
@@ -99,11 +99,11 @@ public class CGoogleSitesProvider
      * still need to select a domain before the provider is
      * fully initialized, using the getSiteList() and useSite()
      * methods.
+     * @param code sent over by google.
+     * @param mon can monitor the progress of the request.
      * @see #getAuthorizationURL
      * @see #getSiteList
      * @see #useSite
-     * @param authorization code sent over by google.
-     * @param mon can monitor the progress of the request.
      */
     public void setAuthorizationCode(String code, IProgressMonitor mon)
         throws IOException

@@ -1,12 +1,12 @@
 package org.thormor.provider;
 
-/**
- * Implement this interface to let thormor access your cloud storage.
- */
-
 import org.thormor.vault.CVault;
 import java.io.IOException;
 import java.net.URL;
+
+/**
+ * Implement this interface to let thormor access your cloud storage.
+ */
 
 public interface IRemoteProvider
 {
@@ -26,9 +26,9 @@ public interface IRemoteProvider
     /**
      * Delete a previously uploaded URL. The URL passed in is one
      * that was previously returned via the upload() method.
-     * @see #upload(info, mon)
-     * @param a previously uploaded URL
+     * @param url is a previously uploaded URL
      * @param mon if not not null, update with delete progress
+     * @see #upload(CUploadInfo, IProgressMonitor)
      */
     public void delete(URL url, IProgressMonitor mon)
         throws IOException;

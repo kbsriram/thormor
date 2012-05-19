@@ -1,11 +1,11 @@
 package org.thormor.provider;
 
+import java.io.File;
+
 /**
  * Implement this interface to let thormor read and write settings,
  *  pgp keys, configuration-related data and messages onto the device.
  */
-
-import java.io.File;
 
 public interface ILocalProvider
 {

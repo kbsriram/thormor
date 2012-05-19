@@ -1,11 +1,5 @@
 package org.thormor.vault;
 
-/**
- * A linked vault represents a thormor vault which the
- * library user can poll for updates, or post messages
- * for the owner of the linked vault.
- *
- */
 
 import org.bouncyrattle.openpgp.PGPPublicKeyRing;
 import org.bouncyrattle.openpgp.PGPPublicKey;
@@ -20,6 +14,13 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.File;
+
+/**
+ * A linked vault represents a thormor vault which the
+ * library user can poll for updates, or post messages
+ * for the owner of the linked vault.
+ *
+ */
 
 public class CLinkedVault
 {

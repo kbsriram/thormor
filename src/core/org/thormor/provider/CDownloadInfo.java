@@ -1,12 +1,12 @@
 package org.thormor.provider;
 
-/**
- * This class contains information about a URL that needs to be downloaded.
- * @see IRemoteProvider#download(info, mon)
- */
-
 import java.io.File;
 import java.net.URL;
+
+/**
+ * This class contains information about a URL that needs to be downloaded.
+ * @see IRemoteProvider#download(CDownloadInfo, IProgressMonitor)
+ */
 
 public class  CDownloadInfo
 {
