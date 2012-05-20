@@ -48,26 +48,38 @@ table {
 }
 
 /* baseline typography. 1em = 16px */
+/* line-height is set at 22px = 1.375em */
+/* elements are set to multiples of 22px (1.375em) */
+
 body {
-    line-height: 1.4em;
+    line-height: 1.375em;
     background-color: #fff;
-    color: #333;
+    color: #555;
     font-family: Georgia, Times, serif;
     width: 70%;
     margin-left: 10%;
     margin-right: 20%;
-    margin-top: 2.8em;
+    margin-top: 2.75em;
+}
+
+body {
+    /*
+    background-image: url(grid22.png);
+    background-repeat: repeat;
+    background-position: 0px -5px;
+    */
 }
 
 p {
-    margin-bottom: 1.4em;
+    margin-bottom: 1.375em;
+    text-renderig: optimizeLegibility;
 }
 strong {
-    font-weight: bold;
-    color: #505050;
+    color: #000;
 }
+
 ul,ol {
-    margin-bottom: 1.4em;
+    margin-bottom: 1.375em;
 }
 
 ol li {
@@ -84,30 +96,39 @@ ul li {
 
 pre,tt {
     font-family: courier,monospace;
-    font-size: 0.8em;
+    font-size: 0.875em;
 }
 pre {
-    margin-bottom: 1.4em;
+    margin-bottom: 1.571428em;
 }
 
 h1, h2, h3, h4, h5 { 
     font-family: Helvetica,Arial,sans-serif;
     font-style: normal;
     font-weight: normal;
-    color: #555;
+    color: #000;
 }
 
 h1 {
-    font-size: 2.1em;
-    line-height: 2.1em;
+    /*
+    font-size: 2em;
+    line-height: 2.0625em;
+    color: #e33;
+    */
+    margin-bottom: 2.75em;
 }
 
 h2 {
-    font-size: 1.8em;
-    line-height: 1.8em;
+    /*
+    font-size: 1.5625em;
+    line-height: 1.76em;
+    */
+    border-top: 1px solid #e8e8e8;
+    margin-top: 4.125em;
+    margin-bottom: 1.375em;
 }
 
+
 h3 {
-    font-size: 1.4em;
-    line-height: 1.6em;
+    /*margin-bottom: 1.375em;*/
 }

@@ -1,45 +1,42 @@
 #Thormor Vault#
 
-A **Thormor vault** is a way to organize data in the cloud to form a
-distributed, secured message exchange system.
+A **Thormor vault** is a way to organize files online to form a
+distributed, secure and private message exchange system.
 
 ##Why##
 
-Current ways to share content lets the service provider peek into the
-content being shared (facebook, g+, gmail, dropbox, path etc.) The
-content is often analyzed and monetized (say, by selling targeted
-ads.) Ultimately, access to the data is controlled by the policies of
-the provider. This leads to privacy concerns when sharing sensitive
-material through these services -- anything from pictures of kids to
-financial or medical files.
+Current ways to post updates or share content lets the service
+provider peek into what's being shared (Facebook, Google+, Gmail,
+Dropbox, Path etc.)  Providers often track and analyze the user's
+actions and content, and monetize the resultant profile. This raises
+concerns when sharing sensitive material through such services --
+anything from pictures of kids to financial or medical data.
 
-However, by first encrypting content with the recipient's public key,
-it is possible to exchange sensitive content while preventing the
-service provider from being able to examine the data.
+However, the technology to let us share content privately has been
+around for a long time. By first encrypting content with the
+recipient's public key, we can exchange sensitive data without
+revealing the contents anyone except the recipient.
 
-Formalizing this approach lets users fully control who can look at
-their shared data, without needing to trust a cloud provider.
+If we formalize this idea, we can write client applications that let
+users exchange private, secure messages using just online storage. The
+user gets full control over who can read their messages, without
+needing to expose the contents to a provider.
 
 ##Summary##
 
 Users store messages online, PGP encrypted with the recipient's public
-key. Recipients poll the sender's storage to fetch messages, and
+key. Recipients access the sender's storage to fetch messages, and
 decrypt them locally with their private key.
 
 ##Assumptions and goals##
 
-0. Any service in the cloud -- network or storage -- may inspect,
-   modify or reveal content to anyone.
+0. Any online service may inspect, modify or reveal messages to anyone.
 
-1. Protect all content transmitted or stored online, so only the
-   intended recipients can decipher the data.
+1. Protect all messages transmitted or stored online, so only the
+   intended recipients can understand the message.
 
-2. Open specification, anyone should be able to host or access a
-   vault.
-
-3. Implementation should be simple enough to work with generally
-   available cloud storage services like dropbox, google drive and so
-   on.
+2. Open specification, anyone should be able to write an application
+   to host and share messages.
 
 ##Not goals##
 
@@ -57,7 +54,8 @@ decrypt them locally with their private key.
 
 ##High-level structure##
 
- ![Structure of a Thormor Vault](images/vault.png)
+<img src="images/vault.png" alt="Structure of a Thormor Vault"
+     style="height:29.875em;"/>
 
 0. Encrypted data is stored online, publicly downloadable by anyone who
    has a link to it.
@@ -70,8 +68,8 @@ decrypt them locally with their private key.
    URL to an **outbox list** file.
 
 3. The outbox list is a signed JSON file with a list of URLs, each
-   pointing to an **outbox** file. There is one outbox file for each
-   recipient who can access the vault.
+   pointing to an **outbox** file. There may be one or more outbox
+   files for each recipient who can access the vault.
 
 4. Each outbox file is an encrypted JSON file with entries, one for
    each message. A message may internally refer to other encrypted
@@ -80,8 +78,7 @@ decrypt them locally with their private key.
    URL to the image itself.
 
    The outbox file and any referenced files are encrypted with the
-   recipient's public key, so only the recipient can decipher the
-   data.
+   recipient's public key, so only the recipient can read this outbox.
 
 5. To send a message to a list of recipients, the sender first adds an
    outbox entry, one for each recipient. The sender then updates the
@@ -91,6 +88,18 @@ decrypt them locally with their private key.
 6. To fetch messages, the receiver polls the sender's outbox URL for
    that recipient, and decrypts it locally to recover the message
    entries.
+
+7. Senders may also choose to create **detached** messages. Such
+   messages do not require the outbox mechanism. A detached message is
+   stored as a separate file, and the URL to this file is directly
+   used to retrieve the message.
+
+8. URLs to detached messages may be used to send secure messages over
+   an existing communication channel with a recipient. For instance,
+   the URL can be sent as a private message on twitter or facebook
+   with a hashtag to identify it as a detached message. Client
+   applications can detect such messages, fetch the URL and decrypt it
+   locally.
 
 ##Details##
 
@@ -139,7 +148,7 @@ The contents must be a JSON file, in the above example it is:
         "outbox_list": "https://dl.dropbox.com/u/1234/thormor/outbox_list.asc"
     }
 
-####Required fields####
+**Required fields**
 
 -  version: 1
 -  self: URL to the root file.
@@ -190,12 +199,12 @@ vault. Each device may choose to add an outbox file unique to messages
 originating from that device, which makes it a little easier to avoid
 clobbering messages from other devices.
 
-####Required fields####
-- version: 1
-- outbox_list: An array of json objects, one for each recipient who
-   can fetch content from this thormor vault.
+**Required fields**
 
-   Each object has one field.
+- version: 1
+- outbox_list: An array of JSON objects, one for each recipient who
+   can fetch content from this thormor vault.<br/>
+   Each JSON object has one field.
        - outbox:
          An ascii-armored string with encrypted content. The content
          is simply the URL to the outbox file for the recipient. The
@@ -224,28 +233,31 @@ unknown fields must be skipped. An example file might be:
             "type": "thormor/file",
             "mime-type": "application/pdf",
             "src": "https://box.net/santoehu/content/82837.pgp",
-            "note": "Mortgage details",
+            "text": "Mortgage details",
+            "name": "home_mortgage.pdf",
+            "size": 988284,
             "created": 13848992828,
             "tags": ["finance"]
          },
          {
             "id": "e2e3b086c3f3c674e161bb02841a44a8b346dd7c",
-            "type": "thormor/image",
+            "type": "thormor/file",
+            "mime-type": "image/jpeg",
             "src": "https://box.net/santoehu/content/a9oeu7.pgp",
-            "note": "Kids at the ballpark!",
-            "geo": {
-               "latitude": 45.498677,
-               "longitude": -73.570260
-            },
-            "created": 13848992828
+            "text": "Kids at the ballpark!",
+            "name": "IMG_0402.JPG",
+            "size":  947520,
+            "created": 13848992828,
+            "tags": ["kids", "family"]
          }
        ]
     }
 
-####Required fields####
+**Required fields**
+
 -  version: 1
 -  entries:
-    an array of json objects, one for each message. Each message
+    an array of JSON objects, one for each message. Each message
     object must have these fields:
       - type: the type of message. Some pre-defined types are
              available, and implementations may define additional
@@ -258,7 +270,8 @@ unknown fields must be skipped. An example file might be:
       - tags: (optional) An array of strings, each string is a
            free-form tag for that message.
 
-####Optional fields####
+**Optional fields**
+
 -  next: URL to another outbox file, with the next set of messages for
         the recipient.
 -  profile_image: URL to an encrypted image for the vault owner.
@@ -273,36 +286,30 @@ the fields.
 ###type: thormor/file###
 This is a generic way to share digital content.
 
-####Required fields####
+**Required fields**
+
 -  src: URL to encrypted file
 
-####Optional fields####
--  mime-type: mime type for the associated content
--  note: A textual note attached to this message.
--  size: size of file in bytes
+**Optional fields**
+
+-  mime-type: mime type for the associated content.
+-  name: Suggested file name.
+-  text: A message to go along with this file.
+-  size: size of file in bytes.
 -  thumbnail: URL to an encrypted "small" image to represent the contents.
-
-###type: thormor/image###
-Share a single image (eg: a picture from a mobile phone.)
-
-####Required fields####
--  src: URL to encrypted image.
-
-####Optional fields####
--  thumbnail: URL to an encrypted "small" image to represent the contents.
--  note: A textual string to go along with the image.
--  geo: A geo-location for the image, with fields latitude and longitude.
 
 ###type: thormor/comment###
 Add a comment to a previous message (can also be a comment, leading to
 threaded comments.)
 
-####Required fields####
+**Required fields**
+
 -  parent: id for the message being commented.
--  note: A textual string containing the comment.
+-  text: Contents of the comment.
 
 ###type: thormor/like###
 'like' a particular message.
 
-####Required fields####
+**Required fields**
+
 -  parent: id for the message being liked.
