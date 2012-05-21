@@ -53,7 +53,6 @@ The contents must be a JSON file, in the above example it is:
 
     {
         "version": 1,
-        "self": "https://dl.dropbox.com/u/1234/thormor/root.asc"
         "public_key": "https://dl.dropbox.com/u/1234/thormor/root.pkr",
         "outbox_list": "https://dl.dropbox.com/u/1234/thormor/outbox_list.asc"
     }
@@ -61,7 +60,6 @@ The contents must be a JSON file, in the above example it is:
 ####Required fields####
 
 -  version: 1
--  self: URL to the root file.
 -  public_key: URL to the public key for the user who owns the vault.
 -  outbox_list: URL to a signed JSON file containing a list of outbox urls.
 
@@ -187,7 +185,7 @@ unknown fields must be skipped. An example file might be:
 -  profile_image: URL to an encrypted image for the vault owner.
 -  name: The name of the vault owner.
 
-##Pre-defined types for the outbox##
+##Pre-defined types for messages##
 
 **Note:** All types must have the standard required fields (type, id and
 created.) The rest of this only describes additional requirements on
@@ -230,3 +228,17 @@ threaded comments.)
 ####Required fields####
 
 -  parent: id for the message being liked.
+
+##Detached Messages##
+
+A detached message is just an encrypted (and signed) JSON file for an
+individual message, and exists independently rather than being an
+element in the `entries` array in an outbox.
+
+Such messages do not need any of the outbox data structures, and
+therefore may also be easier to create and maintain. URLs to such
+files are embedded within pre-existing communication channels between
+the sharers. (eg: in a status update to a set of people on twitter or
+facebook.) Client applications for the recipients can directly access
+and decrypt such a message, thereby providing a private, secure layer
+within that system.
