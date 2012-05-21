@@ -56,10 +56,11 @@ body {
     background-color: #fff;
     color: #555;
     font-family: Georgia, Times, serif;
-    width: 70%;
+    width: 75%;
     margin-left: 10%;
-    margin-right: 20%;
+    margin-right: 15%;
     margin-top: 2.75em;
+    margin-bottom: 2.75em;
 }
 
 body {
@@ -102,8 +103,17 @@ pre {
     margin-bottom: 1.571428em;
 }
 
+a {
+    text-decoration: none;
+    color: #36c;
+}
+
+a:hover {
+    text-decoration:underline;
+}
+
 h1, h2, h3, h4, h5 { 
-    font-family: Helvetica,Arial,sans-serif;
+    font-family: 'Lucida Grande',Verdana,sans-serif;
     font-style: normal;
     font-weight: normal;
     color: #000;
@@ -116,6 +126,8 @@ h1 {
     color: #e33;
     */
     margin-bottom: 2.75em;
+    margin-left: -8%;
+    color: #e33;
 }
 
 h2 {
@@ -126,9 +138,15 @@ h2 {
     border-top: 1px solid #e8e8e8;
     margin-top: 4.125em;
     margin-bottom: 1.375em;
+    margin-left: -8%;
+    color: #e33;
 }
 
 
 h3 {
     /*margin-bottom: 1.375em;*/
+}
+
+h4 {
+    font-family: Georgia, Times, serif;
 }

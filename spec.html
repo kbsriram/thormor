@@ -6,116 +6,31 @@
 <link rel="stylesheet" href="css/style.css"/>
 </head>
 <body>
-<h1>Thormor Vault</h1>
+<h1>Thormor Vault Specification</h1>
 
-<p>A <strong>Thormor vault</strong> is a way to organize files online to form a
-distributed, secure and private message exchange system.</p>
+<p>This document describes the format and organization of thormor
+vaults. Please read the
+<a href="index.html" title="Introduction to Thormor Vaults">introduction to vaults</a>
+for additional background.</p>
 
-<h2>Why</h2>
-
-<p>Current ways to post updates or share content lets the service
-provider peek into what's being shared (Facebook, Google+, Gmail,
-Dropbox, Path etc.)  Providers often track and analyze the user's
-actions and content, and monetize the resultant profile. This raises
-concerns when sharing sensitive material through such services --
-anything from pictures of kids to financial or medical data.</p>
-
-<p>However, the technology to let us share content privately has been
-around for a long time. By first encrypting content with the
-recipient's public key, we can exchange sensitive data without
-revealing the contents anyone except the recipient.</p>
-
-<p>If we formalize this idea, we can write client applications that let
-users exchange private, secure messages using just online storage. The
-user gets full control over who can read their messages, without
-needing to expose the contents to a provider.</p>
-
-<h2>Summary</h2>
-
-<p>Users store messages online, PGP encrypted with the recipient's public
-key. Recipients access the sender's storage to fetch messages, and
-decrypt them locally with their private key.</p>
-
-<h2>Assumptions and goals</h2>
-
-<ol>
-<li><p>Any online service may inspect, modify or reveal messages to anyone.</p></li>
-<li><p>Protect all messages transmitted or stored online, so only the
-intended recipients can understand the message.</p></li>
-<li><p>Open specification, anyone should be able to write an application
-to host and share messages.</p></li>
-</ol>
-
-<h2>Not goals</h2>
-
-<ol>
-<li><p>Discovering vaults. How do you find the thormor vault for a
-particular person?</p></li>
-<li><p>Traffic analysis and anonymity. It may be possible for storage
-providers to use data access patterns to identify connections
-between individuals even if the content being exchanged is
-encrypted.</p></li>
-<li><p>Securing content locally. Once a message is decrypted on a user's
-device, the contents are visible to other applications running
-locally.</p></li>
-</ol>
-
-<h2>High-level structure</h2>
-
-<p><img src="images/vault.png" alt="Structure of a Thormor Vault"
-     style="height:29.875em;"/></p>
-
-<ol>
-<li><p>Encrypted data is stored online, publicly downloadable by anyone who
-has a link to it.</p></li>
-<li><p>A vault is identified by a URL that points to a signed JSON file in
-the cloud. This is the <strong>root</strong> file, which points to other files
-of interest.</p></li>
-<li><p>The root file contains a URL to the user's PGP public key and a
-URL to an <strong>outbox list</strong> file.</p></li>
-<li><p>The outbox list is a signed JSON file with a list of URLs, each
-pointing to an <strong>outbox</strong> file. There may be one or more outbox
-files for each recipient who can access the vault.</p></li>
-<li><p>Each outbox file is an encrypted JSON file with entries, one for
-each message. A message may internally refer to other encrypted
-files, depending on the type of message. For instance, a message
-sharing a picture contains metadata about the picture as well as a
-URL to the image itself.</p>
-
-<p>The outbox file and any referenced files are encrypted with the
-recipient's public key, so only the recipient can read this outbox.</p></li>
-<li><p>To send a message to a list of recipients, the sender first adds an
-outbox entry, one for each recipient. The sender then updates the
-outbox file for each recipient (after encrypting the outbox file
-with the recipient's public key and signing it.)</p></li>
-<li><p>To fetch messages, the receiver polls the sender's outbox URL for
-that recipient, and decrypts it locally to recover the message
-entries.</p></li>
-<li><p>Senders may also choose to create <strong>detached</strong> messages. Such
-messages do not require the outbox mechanism. A detached message is
-stored as a separate file, and the URL to this file is directly
-used to retrieve the message.</p></li>
-<li><p>URLs to detached messages may be used to send secure messages over
-an existing communication channel with a recipient. For instance,
-the URL can be sent as a private message on twitter or facebook
-with a hashtag to identify it as a detached message. Client
-applications can detect such messages, fetch the URL and decrypt it
-locally.</p></li>
-</ol>
-
-<h2>Details</h2>
-
-<h3>General guidelines</h3>
+<h2>General guidelines</h2>
 
 <ul>
-<li><p>Data is typically signed with the sender's key, and clients <em>must</em>
-validate the signature.</p></li>
+<li><p>Thormor Vaults use <a href="http://www.ietf.org/rfc/rfc4880.txt">OpenPGP</a>
+for all encryption and signing.</p></li>
+<li><p>Data is signed with the sender's key, and clients <em>must</em> validate
+the signature.</p></li>
 <li><p>When data is also encrypted, the PGP anonymous mode is used (keyid
 in the header set to 0.) This prevents casually determining who can
 decrypt a given file.</p></li>
 <li><p>Unless stated, both ascii-armored and binary formatted PGP files
-can be used.</p></li>
+may be used.</p></li>
 </ul>
+
+<h2>File organization and details</h2>
+
+<p>Unless otherwise noted, files are in JSON format. All content must be
+publicly accessible through stable URLs.</p>
 
 <h3>The root file</h3>
 
@@ -152,7 +67,7 @@ zu3pYo+MTwMA
 }
 </code></pre>
 
-<p><strong>Required fields</strong></p>
+<h4>Required fields</h4>
 
 <ul>
 <li>version: 1</li>
@@ -205,7 +120,7 @@ vault. Each device may choose to add an outbox file unique to messages
 originating from that device, which makes it a little easier to avoid
 clobbering messages from other devices.</p>
 
-<p><strong>Required fields</strong></p>
+<h4>Required fields</h4>
 
 <ul>
 <li>version: 1</li>
@@ -263,7 +178,7 @@ unknown fields must be skipped. An example file might be:</p>
 }
 </code></pre>
 
-<p><strong>Required fields</strong></p>
+<h4>Required fields</h4>
 
 <ul>
 <li>version: 1</li>
@@ -284,7 +199,7 @@ object must have these fields:
 </ul></li>
 </ul>
 
-<p><strong>Optional fields</strong></p>
+<h4>Optional fields</h4>
 
 <ul>
 <li>next: URL to another outbox file, with the next set of messages for
@@ -299,17 +214,27 @@ object must have these fields:
 created.) The rest of this only describes additional requirements on
 the fields.</p>
 
+<h3>type: thormor/text</h3>
+
+<p>This message type lets you share a simple text message.</p>
+
+<h4>Required fields</h4>
+
+<ul>
+<li>text: The contents of the text message.</li>
+</ul>
+
 <h3>type: thormor/file</h3>
 
 <p>This is a generic way to share digital content.</p>
 
-<p><strong>Required fields</strong></p>
+<h4>Required fields</h4>
 
 <ul>
 <li>src: URL to encrypted file</li>
 </ul>
 
-<p><strong>Optional fields</strong></p>
+<h4>Optional fields</h4>
 
 <ul>
 <li>mime-type: mime type for the associated content.</li>
@@ -324,7 +249,7 @@ the fields.</p>
 <p>Add a comment to a previous message (can also be a comment, leading to
 threaded comments.)</p>
 
-<p><strong>Required fields</strong></p>
+<h4>Required fields</h4>
 
 <ul>
 <li>parent: id for the message being commented.</li>
@@ -335,7 +260,7 @@ threaded comments.)</p>
 
 <p>'like' a particular message.</p>
 
-<p><strong>Required fields</strong></p>
+<h4>Required fields</h4>
 
 <ul>
 <li>parent: id for the message being liked.</li>
