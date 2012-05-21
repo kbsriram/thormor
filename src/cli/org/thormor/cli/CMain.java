@@ -480,12 +480,18 @@ public class CMain
     private static Console s_console;
     private static Monitor s_monitor = null;
     private final static ICommand s_commands[] = {
-        new CExitCommand(),
-        new CFetchCommand(),
-        new CHelpCommand(),
-        new CInfoCommand(),
+
         new CLinkCommand(),
+
         new CShareCommand(),
-        new CShowCommand()
+        new CFetchCommand(),
+        new CShowCommand(),
+
+        new CDetachCommand(),
+        new CGrabCommand(),
+
+        new CInfoCommand(),
+        new CHelpCommand(),
+        new CExitCommand(),
     };
 }

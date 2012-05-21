@@ -63,19 +63,27 @@ class CFetchCommand
         for (int i=0; i<entries.length(); i++) {
             JSONObject entry = entries.optJSONObject(i);
             if (entry == null) { continue; }
-            String type = entry.optString("type");
-            if (type == null) { continue; }
-            if ("thormor/file".equals(type)) {
-                String src = entry.optString("src");
-                String name = entry.optString("name");
-                if (src != null) {
-                    try { downloadFile(src, name, vault, lv, mon); }
-                    catch (IOException ioe) {
-                        ioe.printStackTrace();
-                    }
+            downloadReference(entry, vault, lv, mon);
+        }
+    }
+
+    final static File downloadReference
+        (JSONObject entry, CVault vault, CLinkedVault sender,
+         IProgressMonitor mon)
+        throws IOException
+    {
+        String type = entry.optString("type");
+        if ("thormor/file".equals(type)) {
+            String src = entry.optString("src");
+            String name = entry.optString("name");
+            if (src != null) {
+                try { return downloadFile(src, name, vault, sender, mon); }
+                catch (IOException ioe) {
+                    ioe.printStackTrace();
                 }
             }
         }
+        return null;
     }
 
     final static File getDownloadLocation
@@ -89,13 +97,15 @@ class CFetchCommand
         }
         return target;
     }
-    private final void downloadFile
+    private static final File downloadFile
         (String src, String name, CVault vault, CLinkedVault lv,
          IProgressMonitor mon)
         throws IOException
     {
         File target = getDownloadLocation(lv, src, name);
-        if (target.canRead()) { return; }
-        vault.fetchContent(new URL(src), lv, target, mon);
+        if (!target.canRead()) {
+            vault.fetchContent(new URL(src), lv, target, mon);
+        }
+        return target;
     }
 }

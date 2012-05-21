@@ -99,6 +99,18 @@ public class CVaultLinkTest
         // vault-a updates message store from vault-b
         vault_a.fetchMessages(null);
 
+        // vault-b posts a detached message for vault-a
+        message.put("id", "detach");
+        URL result = vault_b.postDetachedMessage
+            (vault_b.getLinkedVaults(), message, null);
+        System.out.println("result="+result);
+
+        // vault-a should be able to get back the results, also
+        // with the correct signer.
+        CVault.DetachedMessage dm = vault_a.fetchDetachedMessage(result, null);
+        assertEquals(dm.getSender().getId(), vault_b.getId());
+        assertEquals("detach", dm.getContent().optString("id"));
+
         // test that messages are persisted only after
         // delivery by making the provider fail on uploads.
         prov_b.failUploads(true);

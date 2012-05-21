@@ -301,6 +301,32 @@ public class CVault
     { return m_settings.getLinkedVaults(); }
 
     /**
+     * Create a detached json message that only the provided list of
+     * linked vaults can read. The message must have a minimum set of
+     * fields, in particular "id" (a unique message string), "type" (a
+     * string naming the type of message) and "created" (a long
+     * milliseconds from epoch.)
+     *
+     * @param recipients is the list of linked vaults who can read the message.
+     * @param message is a generic json, subject to the above restrictions.
+     * @param monitor is to monitor the status of the request.
+     * @throws IllegalArgumentException if the json object is missing any of
+     * the required fields.
+     * @return a URL that refers to the detached message.
+     */
+    public URL postDetachedMessage
+        (List<CLinkedVault> recipients,  JSONObject message,
+         IProgressMonitor monitor)
+        throws IOException
+    {
+        checkRequiredFields(recipients, message);
+        byte[] buf = CUtils.getBytes(message.toString());
+        return encryptAndUpload
+            (recipients, new ByteArrayInputStream(buf),
+             buf.length, "detached_message.json", monitor);
+    }        
+
+    /**
      * Post a json message that only the provided list of linked vaults
      * can read. The message must have a minimum set of fields, in
      * particular "id" (a unique message string), "type" (a string naming
@@ -317,20 +343,8 @@ public class CVault
          IProgressMonitor monitor)
         throws IOException
     {
-        // Verify required fields.
-        if (message.optString(MESSAGE_ID) == null) {
-            throw new IllegalArgumentException("missing 'id'");
-        }
-        if (message.optString(MESSAGE_TYPE) == null) {
-            throw new IllegalArgumentException("missing 'type'");
-        }
-        if (message.optLong(MESSAGE_CREATED) == 0) {
-            throw new IllegalArgumentException("missing 'created'");
-        }
-        if (recipients.size() == 0) {
-            throw new IllegalArgumentException
-                ("Must have atleast one recipient");
-        }
+        checkRequiredFields(recipients, message);
+
         for (CLinkedVault recipient: recipients) {
             // 1. Splice message into recipient outbox.
             JSONObject outbox = recipient.mergeLocalOutbox(message);
@@ -382,6 +396,83 @@ public class CVault
     }
 
     /**
+     * Fetch the contents of a detached message that is assumed to
+     * be for us. Note that people may send us messages even though
+     * we may not have linked to them. If we are able to identify
+     * the sender, we return it along with the message, otherwise
+     * we just return the message.
+     *
+     * Please be cautious when retrieving messages from unknown people.
+     *
+     * @param url is the location where the detached message may be found.
+     * @param monitor can be used to track the progress of the call.
+     * @return DetachedMessage that contains the decrypted json object
+     * at the provided url and the linked vault (if any) who sent the
+     * message.
+     */
+    public DetachedMessage fetchDetachedMessage
+        (URL url, IProgressMonitor monitor)
+        throws IOException
+    {
+        File tmp = File.createTempFile("thormor", "pgp");
+        BufferedInputStream bin = null;
+        ByteArrayOutputStream bout = null;
+        try {
+            // 1. Download data to temporary file.
+            m_rprovider.download
+                (new CDownloadInfo(url, tmp, true, -1, null),
+                 monitor);
+
+            // 2. Decrypt, get and verify signer, and dump to memory.
+            bin = new BufferedInputStream
+                (new FileInputStream(tmp));
+            bout = new ByteArrayOutputStream();
+            SingleStreamFactory ssf = new SingleStreamFactory(bout);
+            PGPPublicKey signer =
+                CPGPUtils.decrypt
+                (bin, ssf, m_settings.getPrivateEncryptionKey(),
+                 getSigningKeys(getLinkedVaults()));
+            if (ssf.hasFailed()) {
+                throw new IOException("Unable to decrypt "+url);
+            }
+            bin.close();
+            bin = null;
+            // get linked vault from signer.
+            CLinkedVault sender = null;
+            for (CLinkedVault lv: getLinkedVaults()) {
+                if (lv.getSigningKey().getKeyID() == signer.getKeyID()) {
+                    sender = lv;
+                    break;
+                }
+            }
+            if (sender == null) {
+                throw new IllegalStateException
+                    ("Unexpected -- did not find signing vault from key: "+
+                     signer.getKeyID());
+            }
+            // Parse json from bytes.
+            bout.close();
+            JSONObject content;
+            try {
+                content = new JSONObject
+                    (new String(bout.toByteArray(), "utf-8"));
+            }
+            catch (JSONException jse) {
+                throw new IOException(jse);
+            }
+            return new DetachedMessage(content, sender);
+        }
+        finally {
+            tmp.delete();
+            if (bin != null) {
+                try { bin.close(); }
+                catch (IOException ioe) {}
+            }
+        }
+    }
+
+
+    /**
      * Fetch messages from all vaults, and update the local cache with
      * any new content.
      */
@@ -391,6 +482,36 @@ public class CVault
         for (CLinkedVault lv: m_settings.getLinkedVaults()) {
             fetchMessagesFrom(lv, monitor);
         }
+    }
+
+    /**
+     * This class is used to return the content of decrypted detached
+     * messages.
+     * @see #fetchDetachedMessage(URL, IProgressMonitor.)
+     */
+    public final static class DetachedMessage
+    {
+        private DetachedMessage
+            (JSONObject content, CLinkedVault sender)
+        {
+            m_content = content;
+            m_sender = sender;
+        }
+
+        /**
+         * @return the decrypted JSONObject comprising the message.
+         */
+        public JSONObject getContent()
+        { return m_content; }
+
+        /**
+         * @return a verified linked vault who sent the message.
+         */
+        public CLinkedVault getSender()
+        { return m_sender; }
+
+        private final JSONObject m_content;
+        private final CLinkedVault m_sender;
     }
 
     /**
@@ -515,49 +636,9 @@ public class CVault
             throw new IllegalArgumentException
                 ("Must have atleast one recipient");
         }
-        // 1. Encrypt to temporary file
-        long inlen = source.length();
-        List<PGPPublicKey> keys = getKeys(recipients);
-        File tmp = File.createTempFile("thormor", "pgp");
-        BufferedInputStream bin = null;
-        DigestOutputStream dout = null;
-        String sha_out;
-        try {
-            bin = new BufferedInputStream
-                (new FileInputStream(source));
-            dout = new DigestOutputStream
-                (new BufferedOutputStream
-                 (new FileOutputStream(tmp)),
-                 MessageDigest.getInstance("SHA-1"));
-            CPGPUtils.encrypt
-                (bin, inlen, dout, keys,
-                 m_settings.getPublicSigningKey(),
-                 m_settings.getPrivateSigningKey(),
-                 source.getName(), new Date());
-            dout.close();
-            sha_out = CUtils.toHex
-                (dout.getMessageDigest().digest());
-        }
-        catch (NoSuchAlgorithmException nse) {
-            throw new IOException(nse);
-        }
-        finally {
-            if (bin != null) {
-                try { bin.close(); } catch (IOException ign){};
-            }
-            if (dout != null) {
-                try { dout.close(); } catch (IOException ign){};
-            }
-        }
-
-        // 2. Upload
-        try {
-            return m_rprovider.upload
-                (new CUploadInfo(tmp,true,"content/"+sha_out+".pgp"), monitor);
-        }
-        finally {
-            tmp.delete();
-        }
+        return encryptAndUpload
+            (recipients, new BufferedInputStream(new FileInputStream(source)),
+             source.length(), source.getName(), monitor);
     }
 
     /**
@@ -672,11 +753,21 @@ public class CVault
     }
 
     // gather encryption keys from recipients.
-    private List<PGPPublicKey> getKeys(List<CLinkedVault> targets)
+    private List<PGPPublicKey> getEncryptionKeys(List<CLinkedVault> targets)
     {
         List<PGPPublicKey> ret = new ArrayList<PGPPublicKey>();
         for (CLinkedVault lv: targets) {
             ret.add(lv.getEncryptionKey());
+        }
+        return ret;
+    }
+
+    // gather signing keys from recipients.
+    private List<PGPPublicKey> getSigningKeys(List<CLinkedVault> targets)
+    {
+        List<PGPPublicKey> ret = new ArrayList<PGPPublicKey>();
+        for (CLinkedVault lv: targets) {
+            ret.add(lv.getSigningKey());
         }
         return ret;
     }
@@ -875,6 +966,72 @@ public class CVault
         return bout.toByteArray();
     }
 
+    // encrypt, sign, upload stream and return uploaded url.
+    private final URL encryptAndUpload
+        (List<CLinkedVault> recipients, InputStream in, long inlen,
+         String inname, IProgressMonitor monitor)
+        throws IOException
+    {
+            // 1. Encrypt to temporary file
+        List<PGPPublicKey> keys = getEncryptionKeys(recipients);
+        File tmp = File.createTempFile("thormor", "pgp");
+        DigestOutputStream dout = null;
+        String sha_out;
+        try {
+            dout = new DigestOutputStream
+                (new BufferedOutputStream
+                 (new FileOutputStream(tmp)),
+                 MessageDigest.getInstance("SHA-1"));
+            CPGPUtils.encrypt
+                (in, inlen, dout, keys,
+                 m_settings.getPublicSigningKey(),
+                 m_settings.getPrivateSigningKey(),
+                 inname, new Date());
+            dout.close();
+            sha_out = CUtils.toHex
+                (dout.getMessageDigest().digest());
+        }
+        catch (NoSuchAlgorithmException nse) {
+            throw new IOException(nse);
+        }
+        finally {
+            if (in != null) {
+                try { in.close(); } catch (IOException ign){};
+            }
+            if (dout != null) {
+                try { dout.close(); } catch (IOException ign){};
+            }
+        }
+
+        // 2. Upload
+        try {
+            return m_rprovider.upload
+                (new CUploadInfo(tmp,true,"content/"+sha_out+".pgp"), monitor);
+        }
+        finally {
+            tmp.delete();
+        }
+    }
+
+    // check required fields in json message.
+    private final static void checkRequiredFields
+        (List<CLinkedVault> recipients, JSONObject message)
+    {
+        // Verify required fields.
+        if (message.optString(MESSAGE_ID) == null) {
+            throw new IllegalArgumentException("missing 'id'");
+        }
+        if (message.optString(MESSAGE_TYPE) == null) {
+            throw new IllegalArgumentException("missing 'type'");
+        }
+        if (message.optLong(MESSAGE_CREATED) == 0) {
+            throw new IllegalArgumentException("missing 'created'");
+        }
+        if (recipients.size() == 0) {
+            throw new IllegalArgumentException
+                ("Must have atleast one recipient");
+        }
+    }
 
     private final IRemoteProvider m_rprovider;
     private final ILocalProvider m_lprovider;

@@ -16,31 +16,34 @@ import java.net.URL;
 import org.json2012.JSONObject;
 import org.json2012.JSONException;
 
-class CShareCommand
+class CDetachCommand
     extends AMessageCommand
 {
     public String getName()
-    { return "share"; }
+    { return "detach"; }
 
     public String getUsage()
     {
-        return "\tshare message [recipients]\n"+
-            "\t\tShare a message with all your linked recipients, or share\n"+
-            "\t\tit only with a specified list of recipients.\n"+
+        return "\tdetach message [recipients]\n"+
+            "\t\tCreate a detached message shared with all your linked recipients,\n"+
+            "\t\tor only with a specified list of recipients.\n"+
             getFileUsage();
     }
     protected String getFileUsage()
     {
         return
-            "\tshare file <path_to_file> [recipients]\n"+
-            "\t\tShare a file with all your linked recipients, or share\n"+
-            "\t\tit only with a specific list of recipients.";
+            "\tdetach file <path_to_file> [recipients]\n"+
+            "\t\tCreate a detached file shared with all your linked recipients,\n"
+            +"\t\tor only with a specific list of recipients.";
     }
+
     protected void postMessage
-        (List<CLinkedVault>recip, JSONObject message)
+        (List<CLinkedVault> recip, JSONObject message)
         throws IOException
     {
-        CMain.getVault().postMessage
+        URL result = CMain.getVault().postDetachedMessage
             (recip, message, CMain.getProgressMonitor());
+        System.out.println("Detached message location:");
+        System.out.println("\t"+result);
     }
 }

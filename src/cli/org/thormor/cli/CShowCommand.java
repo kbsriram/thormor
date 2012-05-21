@@ -59,7 +59,7 @@ class CShowCommand
             "\t\tonly from a specific list of people.";
     }
 
-    private void formatMessage(JSONObject entry, Date cur)
+    static void formatMessage(JSONObject entry, Date cur)
     {
         formatDate(entry.optLong("created"), cur);
         System.out.print(" <");
@@ -120,13 +120,13 @@ class CShowCommand
         }
     }
 
-    private String formatText(String s)
+    private static String formatText(String s)
     {
         if (s == null) { return ""; }
         return s.replaceAll("\\n", "\n\t");
     }
 
-    private void formatDate(long ts, Date cur)
+    private static void formatDate(long ts, Date cur)
     {
         Date tsdate = new Date(ts);
         s_calendar.setTime(tsdate);

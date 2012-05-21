@@ -50,6 +50,7 @@ import java.security.KeyPairGenerator;
 import java.util.Iterator;
 import java.util.Date;
 import java.util.List;
+import java.util.Arrays;
 import java.io.*;
 
 import java.util.logging.Logger;
@@ -64,7 +65,10 @@ class CPGPUtils
         (InputStream inp, StreamFactory sfac, PGPPublicKey from_pubkey)
         throws IOException
     {
-        try { verifySignedContent(inp, from_pubkey, sfac); }
+        try {
+            verifySignedContent
+                (inp,(from_pubkey!=null)?Arrays.asList(from_pubkey):null,sfac);
+        }
         catch (PGPException pgpe) {
             throw new IOException(pgpe);
         }
@@ -75,9 +79,26 @@ class CPGPUtils
 
     // Decrypt contents with the provided private key, and
     // verify the signature at the end as well.
-    final static void decrypt
+    //
+    // Return the key for the signer
+    final static PGPPublicKey decrypt
         (InputStream inp, StreamFactory sfac,
          PGPPrivateKey privkey, PGPPublicKey from_pubkey)
+        throws IOException
+    {
+        return decrypt
+            (inp, sfac, privkey, (from_pubkey != null) ?
+             Arrays.asList(from_pubkey):null);
+    }
+
+    // Decrypt contents with the provided private key, and
+    // verify the signature comes from one of the allowed
+    // signers.
+    //
+    // Return the key for the actual signer.
+    final static PGPPublicKey decrypt
+        (InputStream inp, StreamFactory sfac,
+         PGPPrivateKey privkey, List<PGPPublicKey> allowed_signers)
         throws IOException
     {
         boolean ok = false;
@@ -87,6 +108,9 @@ class CPGPUtils
                 (PGPUtil.getDecoderStream(inp));
 
             Object x = pgpf.nextObject();
+            if (x == null) {
+                throw new IOException("No encrypted content found");
+            }
             PGPEncryptedDataList enclist;
             if (x instanceof PGPEncryptedDataList) {
                 enclist = (PGPEncryptedDataList)x;
@@ -100,12 +124,14 @@ class CPGPUtils
             if (pkedi == null) {
                 throw new IOException("no encrypted data found!");
             }
+            PGPPublicKey ret = null;
             while (pkedi.hasNext()) {
                 PGPPublicKeyEncryptedData pked = pkedi.next();
                 // We may have other recipients, of whom we know nothing.
                 // This results in a PGPException, ignore them.
                 try {
-                    decryptSignedContent(pked, privkey, from_pubkey, sfac);
+                    ret = decryptSignedContent
+                        (pked, privkey, allowed_signers, sfac);
                     ok = true;
                     break;
                 }
@@ -119,6 +145,7 @@ class CPGPUtils
             if (!ok) {
                 throw new IOException("No data encrypted for us!");
             }
+            return ret;
         }
         catch (SignatureException sige) {
             throw new IOException(sige);
@@ -127,15 +154,15 @@ class CPGPUtils
         }
     }
 
-    private final static void decryptSignedContent
+    private final static PGPPublicKey decryptSignedContent
         (PGPPublicKeyEncryptedData pked, PGPPrivateKey privkey,
-         PGPPublicKey from_pubkey, StreamFactory sfac)
+         List<PGPPublicKey> allowed_signers, StreamFactory sfac)
         throws IOException, PGPException, SignatureException
     {
         InputStream clear = pked.getDataStream
             (new BcPublicKeyDataDecryptorFactory(privkey));
 
-        verifySignedContent(clear, from_pubkey, sfac);
+        PGPPublicKey ret = verifySignedContent(clear, allowed_signers, sfac);
         // Also check the message integrity
         if (!pked.isIntegrityProtected()) {
             throw new IOException("Sorry -- don't read messages without integrity checks");
@@ -143,10 +170,11 @@ class CPGPUtils
         if (!pked.verify()) {
             throw new IOException("Integrity check failed");
         }
+        return ret;
     }
 
-    private final static void verifySignedContent
-        (InputStream inp, PGPPublicKey from_pubkey,
+    private final static PGPPublicKey verifySignedContent
+        (InputStream inp, List<PGPPublicKey> allowed_signers,
          StreamFactory sfac)
         throws IOException, PGPException, SignatureException
     {
@@ -166,9 +194,20 @@ class CPGPUtils
         }
         PGPOnePassSignatureList sig_head = (PGPOnePassSignatureList)msg;
         PGPOnePassSignature onepass_sig = sig_head.get(0);
-        if (from_pubkey != null) {
+        PGPPublicKey ret = null;
+        if (allowed_signers != null) {
+            for (PGPPublicKey allowed: allowed_signers) {
+                if (allowed.getKeyID() == onepass_sig.getKeyID()) {
+                    ret = allowed;
+                    break;
+                }
+            }
+            if (ret == null) {
+                throw new IOException
+                    ("None of your linked vaults have signed this message");
+            }
             onepass_sig.init
-                (new BcPGPContentVerifierBuilderProvider(), from_pubkey);
+                (new BcPGPContentVerifierBuilderProvider(), ret);
         }
         PGPLiteralData ldata = (PGPLiteralData)plainFact.nextObject();
         OutputStream out =
@@ -179,19 +218,19 @@ class CPGPUtils
         int nread;
         while ((nread = lin.read(buf)) > 0) {
             out.write(buf, 0, nread);
-            if (from_pubkey != null) {
+            if (ret != null) {
                 onepass_sig.update(buf, 0, nread);
             }
         }
         out.close();
 
-        if (from_pubkey != null) {
+        if (ret != null) {
             PGPSignatureList sig_list = (PGPSignatureList)plainFact.nextObject();
             if (!onepass_sig.verify(sig_list.get(0))) {
                 throw new IOException("This message is not signed by the sender we expected!");
             }
         }
-
+        return ret;
     }
 
     // Sign content with the provided key
