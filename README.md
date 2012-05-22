@@ -8,15 +8,16 @@ to access vaults.
 
 ## Using the library##
 
-Just add [thormor.jar](bin/thormor.jar) to your project. The
+Just add [thormor.jar](/kbsriram/thormor/raw/master/bin/thormor.jar) to your project. The
 jar file already contains the
 [BouncyCastle PGP implementation](http://www.bouncycastle.org/java.html) as
 as well as [a JSON library](https://github.com/douglascrockford/JSON-java).
 These packages have also been internally renamed to avoid version collisions; so you should
 be able to use the library jar anywhere.
 
-Please look at the [library documentation](docs/library.md) as well as
-[the javadocs](javadoc/index.html) for tips on using the library.
+Please look at the [library documentation](/kbsriram/thormor/blob/master/docs/libapi.md) as well
+as the `javadoc` files in the repository for tips on using the
+library.
 
 ## Running the demo shell##
 
@@ -41,7 +42,7 @@ also has a screencast that shows what you can do with the shell.
 ## License ##
 
 All code in this repository is released under the
-[Simplified BSD License](License.txt).
+[Simplified BSD License](/kbsriram/thormor/blob/master/License.txt).
 
 It uses the
 [BouncyCastle PGP implementation](http://www.bouncycastle.org/java.html)
