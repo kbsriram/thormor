@@ -17,8 +17,7 @@ for additional background.
   in the header set to 0.) This prevents casually determining who can
   decrypt a given file.
 
-- Unless stated, both ascii-armored and binary formatted PGP files
-  may be used.
+- Both ASCII-armored and binary formatted PGP files may be used.
 
 ##File organization and details##
 
@@ -36,17 +35,16 @@ file may look like:
     -----BEGIN PGP MESSAGE-----
     Version: GnuPG v1.4.11 (Darwin)
     
-    owGbwMvMwMRsvMCfg/GWwyXGNe+S2Ir0sorz8/xn7j5TzaUABEplqUXFmfl5SlYK
-    hjoQkeLUnDQgVymjpKSg2EpfPyVHL6UovyApv0IvOT9Xv1Tf0MjYRL8kI78oN79I
-    vyg/v0QvsThZCaK5oDQpJzM5Pju1kkQjCrKLlKAOyC8tAaqMz8ksLiHeECRNEOfU
-    cnUyyrAwMDMxsLEygTzMwMUpAA8LE/b/xSJ33wgc7zDpLv/kcW+/9MZtKbX/9OL4
-    5x4U+u2iNn3lE5O5jJ/S5G695d/zPX4Sc3lHRQJjxQR5jntqororFojrbxAxsznc
-    1q/420p23mTBlr/n5A9lF+Q8tG5cfuBcw2Xj04vPV7cdvHlIaKbLm3s/D89q+b9b
-    yyb/S7bWjJLofxkC/vYvLOuY+XLrLPiFlm38tFl6mrlLe9WC0yL6x5eHHZmf2DxB
-    59FWxUO7fnySzz5v92P/DOnt81ZzyAq4nzJbeHNt5NO1PNs+HlzVxPznwasnfKxH
-    AtwCd0cILNtXvvPp338WTMmejuL3/Vm/zM2We/b47YtPHW4TdiecNCtzkXm9zft/
-    zu3pYo+MTwMA
-    =VCPz
+    owGbwMvMwMRsYirJuyM+7jPjmi1JnEX5+SV6WcX5ef67zxRWcykAgVJZalFxZn6e
+    kpWCoQ5EpKA0KSczOT47tRIoqJRRUlJQbKWvn5Kjl1KUX5CUX6GXnJ+rX6pvaGRs
+    ol+SkV+Um1+kDza5ILtICWpGfmkJUGV8TmZxCfGGIGnSSyxOVuKq5epklGFhYGZi
+    YGNlArmZgYtTAOYjXwP2/4HiGqwSE5IfFDSbz61N01MuqFOqnnlu6w7N2O21a32X
+    Xmf4VL4jyj2w4fCLC9Uzb63b6r7haJygsBzzoiSnHxsbHp8qqgmssD5xqv52AlML
+    90bjuEMfo/ZlHPMTt72x7oXRhUj2tym6s9cKfIqan+HcUD03ziknwu3yByuv5hen
+    ajJXX7rvf/oos2HojZTiv2/vOWgYubz5PjmjvzzxwYK6/0kLKw6EBK3hfM+3dM7n
+    gNovs/1Tfu/4uvd5ixXv55ALy2N+v9/eabYykmXf10U7X+pGVKbpn1izYd7vDtUV
+    Lkfucy8J9b9rWhXZubBSbk33Uhe1MyVuK+/c3CdzoTjiiuhWmbbXCzyCGEv/agEA
+    =h3eh
     -----END PGP MESSAGE-----
 
 The contents must be a JSON file, in the above example it is:

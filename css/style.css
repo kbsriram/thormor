@@ -56,9 +56,9 @@ body {
     background-color: #fff;
     color: #555;
     font-family: Georgia, Times, serif;
-    width: 75%;
-    margin-left: 10%;
-    margin-right: 15%;
+    width: 80%;
+    margin-left: auto;
+    margin-right: auto;
     margin-top: 2.75em;
     margin-bottom: 2.75em;
 }
@@ -149,4 +149,10 @@ h3 {
 
 h4 {
     font-family: Georgia, Times, serif;
+}
+
+@media screen and (min-width: 52.5em) {
+    body {
+        width: 42em;
+    }
 }

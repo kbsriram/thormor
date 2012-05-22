@@ -5,23 +5,21 @@ distributed, secure and private message exchange system.
 
 ##Why##
 
-Current ways to post updates or share content lets the service
+Current ways to share status updates and content lets the service
 provider peek into what's being shared (Facebook, Google+, Gmail, Path
 etc.)  Providers often track and analyze the user's actions and
-content, and monetize the resultant profile. This often raises
-concerns when potentially sensitive material is shared through such
-services.
+content, and monetize the resultant profile. This raises concerns when
+potentially sensitive material is shared through such services.
 
-However, the technology to let us share content privately has been
-around for a long time. By first encrypting content with the
-recipient's public key, we can exchange sensitive data without
-revealing the contents anyone except the recipient.
+However, the technology to let us share data privately has been around
+for a long time. By first encrypting content with the recipient's
+public key, we can exchange sensitive data without revealing the
+contents anyone except the recipient.
 
-If we formalize this idea, we can write client applications that
-allows users to independently share private, secured messages using
-just online storage. When necessary, they can exercise control over
-who can read their messages without needing to expose the contents to
-a provider.
+If we formalize this idea, we can write client applications that lets
+users independently share private, secured messages over their online
+storage. They can own and directly control who reads their messages
+without relying upon or revealing the contents to a provider.
 
 ##Summary##
 
@@ -31,12 +29,12 @@ decrypt them locally with their private key.
 
 ##Assumptions and goals##
 
-0. Any online service may inspect, modify or reveal messages to anyone.
+0. Any online service may look inside or modify the data they handle.
 
 1. Protect all messages transmitted or stored online, so only the
    intended recipients can understand the message.
 
-2. Open specification, anyone should be able to write an application
+2. Open specification. Anyone should be able to write an application
    to host and share messages.
 
 ##Not goals##
@@ -46,8 +44,7 @@ decrypt them locally with their private key.
 
 2. Traffic analysis and anonymity. It may be possible for storage
    providers to use data access patterns to identify connections
-   between individuals even if the content being exchanged is
-   encrypted.
+   between individuals even if the content is encrypted.
 
 3. Securing content locally. Once a message is decrypted on a user's
    device, the contents are visible to other applications running
@@ -95,16 +92,15 @@ decrypt them locally with their private key.
    simply stored as a separate file, and the URL to this file is
    directly used to retrieve the message.
 
-8. URLs to detached messages may be used to send secure messages over
-   an existing communication channel with a recipient. For instance,
-   the URL can be sent as a private message on twitter or facebook
-   with a hashtag to identify it as a detached message. Client
-   applications can detect such messages, fetch the URL and decrypt it
-   locally.
+8. URLs to detached messages can be embedded in an existing messaging
+   system, creating a secure layer within that system. For instance, a
+   URL can be sent in a private message on Twitter or Facebook with a
+   hashtag to identify it as a detached message. Client applications
+   can detect such messages, fetch the URL and decrypt it locally.
 
 ##Overview and demo##
 
-<iframe width="640" height="385" src="http://www.youtube.com/embed/huyQZYG_vWs" frameborder="0" allowfullscreen style="margin-bottom: 11px"></iframe>
+<iframe width="640" height="385" src="http://www.youtube.com/embed/R5XFcbyVn_E" frameborder="0" allowfullscreen style="margin-bottom: 11px"></iframe>
 
 ##More Information##
 
