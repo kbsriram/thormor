@@ -1,9 +1,11 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<project name="thormor" default="core-compile" basedir=".">
+<project name="thormor" default="release" basedir=".">
 
   <property name="java.source" value="1.5"/>
   <property name="java.target" value="1.5"/>
   <property name="lib.dir" value="${basedir}/lib"/>
+  <property name="bin.dir" value="${basedir}/bin"/>
+  <property name="javadoc.dir" value="${basedir}/javadoc"/>
 
   <property name="classes.dir" value="classes"/>
   <property name="src.dir" value="src"/>
@@ -14,6 +16,9 @@
     <pathelement path="${lib.dir}/bcpg-jdk15on-147.jar"/>
   </path>
 
+  <target name="release"
+          depends="test,javadoc,jar"/>
+
   <target name="init">
     <mkdir dir="${classes.dir}/core"/>
     <mkdir dir="${classes.dir}/provider/local/homedir"/>
@@ -21,6 +26,8 @@
     <mkdir dir="${classes.dir}/cli"/>
     <mkdir dir="${classes.dir}/test"/>
     <mkdir dir="${reports.dir}"/>
+    <mkdir dir="${bin.dir}"/>
+    <mkdir dir="${javadoc.dir}"/>
   </target>
 
   <target name="compile"
@@ -29,7 +36,7 @@
   <target name="javadoc"
           depends="compile">
     <javadoc
-        destdir="${basedir}/javadoc">
+        destdir="${javadoc.dir}">
       <sourcepath>
         <pathelement path="${src.dir}/core"/>
         <pathelement path="${src.dir}/provider/local/homedir"/>
@@ -77,9 +84,12 @@
     </javac>
   </target>
 
+  <target name="jar"
+          depends="cli-jar,lib-jar"/>
+
   <target name="cli-jar"
           depends="cli-compile">
-    <jar destfile="${classes.dir}/thormor-cli.jar">
+    <jar destfile="${bin.dir}/thormor-cli.jar">
       <fileset dir="${classes.dir}/core"/>
       <fileset dir="${classes.dir}/provider/local/homedir"/>
       <fileset dir="${classes.dir}/provider/remote/googlesites"/>
@@ -92,6 +102,16 @@
         <attribute name="Main-Class"
                    value="org.thormor.cli.CMain"/>
       </manifest>
+    </jar>
+  </target>
+  <target name="lib-jar"
+          depends="core-compile">
+    <jar destfile="${bin.dir}/thormor.jar">
+      <fileset dir="${classes.dir}/core"/>
+      <zipfileset includes="**/*.class"
+                  src="${lib.dir}/bcprov-jdk15on-147.jar"/>
+      <zipfileset includes="**/*.class"
+                  src="${lib.dir}/bcpg-jdk15on-147.jar"/>
     </jar>
   </target>
 
@@ -173,6 +193,8 @@
   <target name="clean">
     <delete dir="${classes.dir}"/>
     <delete dir="${reports.dir}"/>
+    <delete dir="${bin.dir}"/>
+    <delete dir="${javadoc.dir}"/>
   </target>
 
 </project>

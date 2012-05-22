@@ -487,7 +487,7 @@ public class CVault
     /**
      * This class is used to return the content of decrypted detached
      * messages.
-     * @see #fetchDetachedMessage(URL, IProgressMonitor.)
+     * @see CVault#fetchDetachedMessage(URL, IProgressMonitor)
      */
     public final static class DetachedMessage
     {
