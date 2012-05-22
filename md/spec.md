@@ -127,9 +127,10 @@ outbox file rather than changing the location of the outbox file.
 
 ###The outbox file###
 
-The outbox URL for a recipient points to an signed, encrypted JSON
-file. The format is intended to be extended by applications, and any
-unknown fields must be skipped. An example file might be:
+The outbox URL for a recipient points to an signed JSON file encrypted
+with the recipients public key. The format is intended to be extended
+by applications, and any unknown fields must be skipped. An example
+file (before encryption) might be:
 
     {
       "version": 1,
@@ -235,10 +236,9 @@ A detached message is just an encrypted (and signed) JSON file for an
 individual message, and exists independently rather than being an
 element in the `entries` array in an outbox.
 
-Such messages do not need any of the outbox data structures, and
-therefore may also be easier to create and maintain. URLs to such
-files are embedded within pre-existing communication channels between
-the sharers. (eg: in a status update to a set of people on twitter or
-facebook.) Client applications for the recipients can directly access
-and decrypt such a message, thereby providing a private, secure layer
-within that system.
+Such messages do not need any of the outbox data structures, and may
+be easier to create and maintain. URLs to such files are embedded
+within pre-existing communication channels between the sharers. (eg:
+in a status update to a set of people on twitter or facebook.) Client
+applications for the recipients can directly access and decrypt such a
+message, thereby providing a private, secure layer within that system.
