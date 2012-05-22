@@ -44,9 +44,13 @@ also has a screencast that shows what you can do with the shell.
 All code in this repository is released under the
 [Simplified BSD License](/kbsriram/thormor/blob/master/License.txt).
 
-It uses the
-[BouncyCastle PGP implementation](http://www.bouncycastle.org/java.html)
-which is made available under the following license.
+It also uses the
+[BouncyCastle Cryptography APIs](http://www.bouncycastle.org/java.html).
+The source code for the BouncyCastle libraries can be obtained from
+<http://www.bouncycastle.org/download/bcpg-jdk15on-147.tar.gz> and
+<http://www.bouncycastle.org/download/bcprov-jdk15on-147.tar.gz>
+
+The BouncyCastle library is made available under the following license.
 
 <pre><code>
 Copyright (c) 2000 - 2011 The Legion Of The Bouncy Castle (http://www.bouncycastle.org)
@@ -100,3 +104,14 @@ SOFTWARE.
 
 Both these packages have been internally renamed in order to avoid
 namespace collisions.
+
+## Crypto Notice ##
+
+This distribution includes cryptographic software. The country in
+which you currently reside may have restrictions on the import,
+possession, use, and/or re-export to another country, of encryption
+software. BEFORE using any encryption software, please check your
+country's laws, regulations and policies concerning the import,
+possession, or use, and re-export of encryption software, to see if
+this is permitted. See <http://www.wassenaar.org/> for more
+information.
