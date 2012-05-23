@@ -100,7 +100,7 @@ decrypt them locally with their private key.
 
 ##Overview and demo##
 
-<iframe width="640" height="385" src="http://www.youtube.com/embed/R5XFcbyVn_E" frameborder="0" allowfullscreen style="margin-bottom: 11px"></iframe>
+<iframe width="640" height="385" src="http://www.youtube.com/embed/R5XFcbyVn_E" frameborder="0" allowfullscreen style="margin-bottom: 5px"></iframe>
 
 ##More Information##
 
@@ -109,4 +109,4 @@ decrypt them locally with their private key.
 
  - A [standalone java library](https://github.com/kbsriram/thormor "Github repository for library") including a sample shell to manage
    vaults.
-
+<p style="margin-top:2.75em; margin-left:-8%;text-align:right"><small>by <a href="https://plus.google.com/102207019656909757485?rel=author">KB Sriram <img src="https://lh5.googleusercontent.com/-9fHCOzZy0WI/AAAAAAAAAAI/AAAAAAAAAIk/fH4Ta6jcviI/s48-c-k/photo.jpg" style="height:3.4375em; float: right;margin-top:-2.175em; margin-left: 0.4em;"/> </a></small></p>
