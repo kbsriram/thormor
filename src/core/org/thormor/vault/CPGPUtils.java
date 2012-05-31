@@ -70,10 +70,10 @@ class CPGPUtils
                 (inp,(from_pubkey!=null)?Arrays.asList(from_pubkey):null,sfac);
         }
         catch (PGPException pgpe) {
-            throw new IOException(pgpe);
+            throw CUtils.insert(new IOException(), pgpe);
         }
         catch (SignatureException sige) {
-            throw new IOException(sige);
+            throw CUtils.insert(new IOException(), sige);
         }
     }
 
@@ -148,7 +148,7 @@ class CPGPUtils
             return ret;
         }
         catch (SignatureException sige) {
-            throw new IOException(sige);
+            throw CUtils.insert(new IOException(), sige);
         }
         finally {
         }
@@ -283,10 +283,10 @@ class CPGPUtils
             comGen.close();
         }
         catch (PGPException pge) {
-            throw new IOException(pge);
+            throw CUtils.insert(new IOException(), pge);
         }
         catch (SignatureException sge) {
-            throw new IOException(sge);
+            throw CUtils.insert(new IOException(), sge);
         }
     }
 
@@ -358,10 +358,10 @@ class CPGPUtils
             encGen.close();
         }
         catch (PGPException pge) {
-            throw new IOException(pge);
+            throw CUtils.insert(new IOException(), pge);
         }
         catch (SignatureException sge) {
-            throw new IOException(sge);
+            throw CUtils.insert(new IOException(), sge);
         }
     }
 
@@ -502,7 +502,7 @@ class CPGPUtils
             return null;
         }
         catch (PGPException pgpe) {
-            throw new IOException(pgpe);
+            throw CUtils.insert(new IOException(), pgpe);
         }
     }
 
@@ -582,7 +582,7 @@ class CPGPUtils
             return null;
         }
         catch (PGPException pgpe) {
-            throw new IOException(pgpe);
+            throw CUtils.insert(new IOException(), pgpe);
         }
         finally {
             if (bin != null) { bin.close(); }

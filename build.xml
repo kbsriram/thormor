@@ -48,6 +48,7 @@
         <pathelement location="${classes.dir}/provider/remote/googlesites"/>
         <path refid="bc.lib"/>
       </classpath>
+      <arg value="-notimestamp"/>
     </javadoc>
   </target>
     

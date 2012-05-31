@@ -86,7 +86,7 @@ class CUtils
                 (new JSONTokener(r));
         }
         catch (JSONException jse) {
-            throw new IOException(jse);
+            throw insert(new IOException(), jse);
         }
     }
 
@@ -112,8 +112,14 @@ class CUtils
     {
         try { js.write(w); }
         catch (JSONException jse) {
-            throw new IOException(jse);
+            throw insert(new IOException(), jse);
         }
+    }
+
+    final static IOException insert(IOException base, Throwable cause)
+    {
+        base.initCause(cause);
+        return base;
     }
 
     // purely to avoid checked exceptions

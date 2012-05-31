@@ -458,7 +458,7 @@ public class CVault
                     (new String(bout.toByteArray(), "utf-8"));
             }
             catch (JSONException jse) {
-                throw new IOException(jse);
+                throw CUtils.insert(new IOException(), jse);
             }
             return new DetachedMessage(content, sender);
         }
@@ -992,7 +992,7 @@ public class CVault
                 (dout.getMessageDigest().digest());
         }
         catch (NoSuchAlgorithmException nse) {
-            throw new IOException(nse);
+            throw CUtils.insert(new IOException(), nse);
         }
         finally {
             if (in != null) {
