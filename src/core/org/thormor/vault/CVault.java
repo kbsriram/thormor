@@ -132,7 +132,7 @@ public class CVault
         if (monitor != null) {
             monitor.status("Upload public key to vault");
         }
-        File tmpf = File.createTempFile("thormor", "pkr");
+        File tmpf = m_lprovider.createTempFile("thormor", "pkr");
         CPGPUtils.writePublicKeyRing(pkr, tmpf);
         URL pk_url = m_rprovider.upload
             (new CUploadInfo(tmpf, true, "root.pkr"), monitor);
@@ -212,7 +212,7 @@ public class CVault
         if (ret != null) { return ret; }
 
         // 1. Download root json
-        File tmp_rootf = File.createTempFile("thormor", "pgp");
+        File tmp_rootf = m_lprovider.createTempFile("thormor", "pgp");
         m_rprovider.download
             (new CDownloadInfo(vaultid, tmp_rootf, true, -1, null),
              monitor);
@@ -229,7 +229,7 @@ public class CVault
         URL outbox_list_url = new URL(rootjs.optString("outbox_list"));
 
         // 2. Download public key
-        File tmp_pubkey = File.createTempFile("thormor", "pgp");
+        File tmp_pubkey = m_lprovider.createTempFile("thormor", "pgp");
         PGPPublicKeyRing pkr;
         try {
             m_rprovider.download
@@ -356,7 +356,7 @@ public class CVault
                 long inlen = buf.length;
                 buf = null;
 
-                File tmp = File.createTempFile("thormor", "pgp");
+                File tmp = m_lprovider.createTempFile("thormor", "pgp");
                 BufferedOutputStream bout = null;
                 boolean ok = false;
                 try {
@@ -414,7 +414,7 @@ public class CVault
         (URL url, IProgressMonitor monitor)
         throws IOException
     {
-        File tmp = File.createTempFile("thormor", "pgp");
+        File tmp = m_lprovider.createTempFile("thormor", "pgp");
         BufferedInputStream bin = null;
         ByteArrayOutputStream bout = null;
         try {
@@ -575,7 +575,7 @@ public class CVault
         throws IOException
     {
         boolean ok = false;
-        File tmp = File.createTempFile("thormor", "pgp");
+        File tmp = m_lprovider.createTempFile("thormor", "pgp");
         BufferedOutputStream bout = null;
         BufferedInputStream bin = null;
         try {
@@ -887,7 +887,7 @@ public class CVault
         ByteArrayInputStream bin = new ByteArrayInputStream(jsbuf);
 
         // Sign contents into a temporary file.
-        File tmp = File.createTempFile("thormor", "pgp");
+        File tmp = m_lprovider.createTempFile("thormor", "pgp");
         BufferedOutputStream bout =
             new BufferedOutputStream
             (new FileOutputStream(tmp));
@@ -974,7 +974,7 @@ public class CVault
     {
             // 1. Encrypt to temporary file
         List<PGPPublicKey> keys = getEncryptionKeys(recipients);
-        File tmp = File.createTempFile("thormor", "pgp");
+        File tmp = m_lprovider.createTempFile("thormor", "pgp");
         DigestOutputStream dout = null;
         String sha_out;
         try {

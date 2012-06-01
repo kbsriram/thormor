@@ -17,6 +17,10 @@ class CLocalProvider
     public File getCacheFileFor(String path)
     { return new File(m_root, "cache/"+path); }
 
+    public File createTempFile(String prefix, String suffix)
+        throws IOException
+    { return File.createTempFile(prefix, suffix); }
+
     CLocalProvider(String pid)
     { m_root = "src/test/org/thormor/provider/remote/data/"+pid; }
 

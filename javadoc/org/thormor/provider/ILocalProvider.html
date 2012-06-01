@@ -117,6 +117,15 @@ Implement this interface to let thormor read and write settings,
 <TR BGCOLOR="white" CLASS="TableRowColor">
 <TD ALIGN="right" VALIGN="top" WIDTH="1%"><FONT SIZE="-1">
 <CODE>&nbsp;java.io.File</CODE></FONT></TD>
+<TD><CODE><B><A HREF="../../../org/thormor/provider/ILocalProvider.html#createTempFile(java.lang.String, java.lang.String)">createTempFile</A></B>(java.lang.String&nbsp;prefix,
+               java.lang.String&nbsp;suffix)</CODE>
+
+<BR>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Create a path to a new temporary file.</TD>
+</TR>
+<TR BGCOLOR="white" CLASS="TableRowColor">
+<TD ALIGN="right" VALIGN="top" WIDTH="1%"><FONT SIZE="-1">
+<CODE>&nbsp;java.io.File</CODE></FONT></TD>
 <TD><CODE><B><A HREF="../../../org/thormor/provider/ILocalProvider.html#getCacheFileFor(java.lang.String)">getCacheFileFor</A></B>(java.lang.String&nbsp;path)</CODE>
 
 <BR>
@@ -169,6 +178,27 @@ java.io.File <B>getCacheFileFor</B>(java.lang.String&nbsp;path)</PRE>
 <P>
 <DD><DL>
 <DT><B>Parameters:</B><DD><CODE>path</CODE> - is a key to the cache file.</DL>
+</DD>
+</DL>
+<HR>
+
+<A NAME="createTempFile(java.lang.String, java.lang.String)"><!-- --></A><H3>
+createTempFile</H3>
+<PRE>
+java.io.File <B>createTempFile</B>(java.lang.String&nbsp;prefix,
+                            java.lang.String&nbsp;suffix)
+                            throws java.io.IOException</PRE>
+<DL>
+<DD>Create a path to a new temporary file. This is an exact
+ drop-in for the semantics of the createTempFile method
+ in the stock java.io.File class.
+<P>
+<DD><DL>
+<DT><B>Parameters:</B><DD><CODE>prefix</CODE> - The prefix string to be used in generating the file's
+                    name; must be at least three characters long<DD><CODE>suffix</CODE> - The suffix string to be used in generating the file's
+                    name; may be <code>null</code>.
+<DT><B>Throws:</B>
+<DD><CODE>java.io.IOException</CODE><DT><B>See Also:</B><DD><CODE>File.createTempFile(String, String)</CODE></DL>
 </DD>
 </DL>
 <!-- ========= END OF CLASS DATA ========= -->

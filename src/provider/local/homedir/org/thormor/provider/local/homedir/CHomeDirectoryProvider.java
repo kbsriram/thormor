@@ -8,6 +8,7 @@ package org.thormor.provider.local.homedir;
  */
 
 import java.io.File;
+import java.io.IOException;
 import org.thormor.provider.ILocalProvider;
 
 public class CHomeDirectoryProvider
@@ -46,6 +47,10 @@ public class CHomeDirectoryProvider
 
     public File getCacheFileFor(String path)
     { return new File(m_cacheroot, path); }
+
+    public File createTempFile(String prefix, String suffix)
+        throws IOException
+    { return File.createTempFile(prefix, suffix); }
 
     private final File m_configroot;
     private final File m_cacheroot;

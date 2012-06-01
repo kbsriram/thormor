@@ -141,6 +141,15 @@ java.lang.Object
 <TR BGCOLOR="white" CLASS="TableRowColor">
 <TD ALIGN="right" VALIGN="top" WIDTH="1%"><FONT SIZE="-1">
 <CODE>&nbsp;java.io.File</CODE></FONT></TD>
+<TD><CODE><B><A HREF="../../../../../org/thormor/provider/local/homedir/CHomeDirectoryProvider.html#createTempFile(java.lang.String, java.lang.String)">createTempFile</A></B>(java.lang.String&nbsp;prefix,
+               java.lang.String&nbsp;suffix)</CODE>
+
+<BR>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Create a path to a new temporary file.</TD>
+</TR>
+<TR BGCOLOR="white" CLASS="TableRowColor">
+<TD ALIGN="right" VALIGN="top" WIDTH="1%"><FONT SIZE="-1">
+<CODE>&nbsp;java.io.File</CODE></FONT></TD>
 <TD><CODE><B><A HREF="../../../../../org/thormor/provider/local/homedir/CHomeDirectoryProvider.html#getCacheFileFor(java.lang.String)">getCacheFileFor</A></B>(java.lang.String&nbsp;path)</CODE>
 
 <BR>
@@ -244,6 +253,31 @@ public java.io.File <B>getCacheFileFor</B>(java.lang.String&nbsp;path)</PRE>
 </DD>
 <DD><DL>
 <DT><B>Parameters:</B><DD><CODE>path</CODE> - is a key to the cache file.</DL>
+</DD>
+</DL>
+<HR>
+
+<A NAME="createTempFile(java.lang.String, java.lang.String)"><!-- --></A><H3>
+createTempFile</H3>
+<PRE>
+public java.io.File <B>createTempFile</B>(java.lang.String&nbsp;prefix,
+                                   java.lang.String&nbsp;suffix)
+                            throws java.io.IOException</PRE>
+<DL>
+<DD><B>Description copied from interface: <CODE><A HREF="../../../../../org/thormor/provider/ILocalProvider.html#createTempFile(java.lang.String, java.lang.String)">ILocalProvider</A></CODE></B></DD>
+<DD>Create a path to a new temporary file. This is an exact
+ drop-in for the semantics of the createTempFile method
+ in the stock java.io.File class.
+<P>
+<DD><DL>
+<DT><B>Specified by:</B><DD><CODE><A HREF="../../../../../org/thormor/provider/ILocalProvider.html#createTempFile(java.lang.String, java.lang.String)">createTempFile</A></CODE> in interface <CODE><A HREF="../../../../../org/thormor/provider/ILocalProvider.html" title="interface in org.thormor.provider">ILocalProvider</A></CODE></DL>
+</DD>
+<DD><DL>
+<DT><B>Parameters:</B><DD><CODE>prefix</CODE> - The prefix string to be used in generating the file's
+                    name; must be at least three characters long<DD><CODE>suffix</CODE> - The suffix string to be used in generating the file's
+                    name; may be <code>null</code>.
+<DT><B>Throws:</B>
+<DD><CODE>java.io.IOException</CODE><DT><B>See Also:</B><DD><CODE>File.createTempFile(String, String)</CODE></DL>
 </DD>
 </DL>
 <!-- ========= END OF CLASS DATA ========= -->

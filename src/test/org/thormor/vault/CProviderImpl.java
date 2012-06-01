@@ -75,6 +75,10 @@ public class CProviderImpl
         return ret;
     }
 
+    public File createTempFile(String prefix, String suffix)
+        throws IOException
+    { return File.createTempFile(prefix, suffix); }
+
     public void postUnlockHook(CVault vault)
     {
         System.out.println("post-upload-hook called");
