@@ -181,7 +181,7 @@ public class CLinkedVault
             return new JSONObject(tok);
         }
         catch (JSONException jse) {
-            throw new IOException(jse);
+            throw CUtils.insert(new IOException(), jse);
         }
         finally {
             inp.close();
