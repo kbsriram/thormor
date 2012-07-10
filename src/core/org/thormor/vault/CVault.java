@@ -735,11 +735,12 @@ public class CVault
         }
     }
 
-    // package protected
-    ILocalProvider getLocalProvider()
+    public ILocalProvider getLocalProvider()
     { return m_lprovider; }
-    IRemoteProvider getRemoteProvider()
+    public IRemoteProvider getRemoteProvider()
     { return m_rprovider; }
+
+    // package protected
     CSettings getSettings()
     { return m_settings; }
 
